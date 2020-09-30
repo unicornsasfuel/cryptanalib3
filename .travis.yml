@@ -1,0 +1,18 @@
+---
+dist: trusty
+sudo: false
+
+language: python
+python: '3.6'
+cache: pip
+
+matrix:
+  fast-finish: true
+
+env:
+  - TEST_RUN='./tests/travis_python_tests'
+
+install:
+  - pip install -U .
+
+script: "$TEST_RUN"
