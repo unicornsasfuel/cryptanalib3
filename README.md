@@ -4,6 +4,8 @@
 
 Since Python3 forces a choice between bytes and string objects, cryptanalib3 now operates entirely on bytes objects. All functions now receive and return bytes objects.
 
+This project is passing all tests, but still needs a lot of cleanup.
+
 ## Usage
 
 ```
