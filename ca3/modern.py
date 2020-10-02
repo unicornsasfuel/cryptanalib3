@@ -466,9 +466,6 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
             new_a = max(a, ceil( (B2 + r * Decimal(modulus))/s ) )
             new_b = min(b, floor( (B3 - 1 + r * Decimal(modulus))/s ) )
             if new_a <= new_b:
-               #debug: figure out when new_a >= new_b
-               if new_a == new_b:
-                  pdb.set_trace()
                new_M |= set([(new_a, new_b)])
       if len(new_M) == 0:
          return M
@@ -518,7 +515,6 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
                return number.long_to_bytes(rsa_unblind(message,s0,modulus))
          # Something went wrong...
          print("something went wrong.")
-         pdb.set_trace()
          return False
       i += 1
 

@@ -4,7 +4,6 @@ by Daniel "unicornFurnace" Crowley
 
 dependencies - PyCryptodome
 '''
-import pdb
 # Get helper functions
 from .helpers import *
 
@@ -73,11 +72,14 @@ def morse_decode(text, dot=b'.', dash=b'-', space=b' '):
    ``byte`` dash - An alternate dash char
    ``byte`` space - A char to split the text on
    '''
-   inverse_morse_table = [(x_y[1],x_y[0]) for x_y in list(morse_table.items())]
    dot_dash_trans = bytes.maketrans(b'.-', dot+dash)
-   inverse_morse_table = [(bytes.translate(x,dot_dash_trans), y) for (x,y) in inverse_morse_table]
+   inverse_morse_table = [(bytes.translate(x,dot_dash_trans), y) for (y,x) in morse_table.items()] 
    inverse_morse_table = dict(inverse_morse_table)
-   return b''.join([inverse_morse_table[char] for char in text.split(space) if char in list(inverse_morse_table.keys())])
+   result = b''
+   for sequence in text.split(space):
+      if sequence in inverse_morse_table.keys():
+         result += inverse_morse_table[sequence]
+   return result
 
 
 def morse_encode(text, dot=b'.', dash=b'-', space=b' '):
@@ -89,8 +91,8 @@ def morse_encode(text, dot=b'.', dash=b'-', space=b' '):
    translated_morse_table = dict(translated_morse_table)
    output = []
    for char in text.lower():
-      if char in lowercase_letters + digits:
-         output.append(translated_morse_table[char])
+      if bytes([char]) in lowercase_letters + digits:
+         output.append(translated_morse_table[bytes( [char] )])
    return space.join(output)
    
 
