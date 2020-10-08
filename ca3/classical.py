@@ -163,7 +163,7 @@ def break_ascii_shift(ciphertext, num_answers=1, freq_table=frequency.frequency_
    ``[bytes, ...]`` The num_answers best answers, as scored by plaintext detection. If ``return_keys``
       is ``True``, return ``[(bytes, int), ...]`` instead.
    '''
-   return break_generic_shift(ciphertext, list(map(chr,list(range(256)))), num_answers=num_answers, freq_table=freq_table, return_keys=return_keys)
+   return break_generic_shift(ciphertext, [bytes([x]) for x in range(256)], num_answers=num_answers, freq_table=freq_table, return_keys=return_keys)
 
 
 def break_columnar_transposition(ciphertext, pt_freq_table=frequency.frequency_tables['single_english'], num_answers=1):
