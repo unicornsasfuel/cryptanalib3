@@ -780,16 +780,16 @@ def make_polybius_square(password,extended=False):
    if extended == True:
       alphabet += digits
    else:
-      alphabet = bytes.replace(lowercase_letters, b'j', b'')
+      alphabet = bytes.replace(b''.join(lowercase_letters), b'j', b'')
       password = bytes.replace(password, b'j', b'i')
    if any([x not in alphabet for x in set(password)]):
       return False
    unique_letters = []
-   for letter in password:
+   for letter in [bytes([x]) for x in password]:
       if letter not in unique_letters:
          unique_letters.append(letter)
    for letter in unique_letters:
-      alphabet = string.replace(alphabet, letter, b'')
+      alphabet = bytes.replace(alphabet, letter, b'')
    for letter in unique_letters[::-1]:
       alphabet = letter + alphabet
    ps = []
@@ -815,9 +815,9 @@ def polybius_decrypt(ps, ciphertext):
    for index in range(0,ct_len,2):
       digraphs.append(ciphertext[index:index+2])
    for digraph in digraphs:
-      x = int(digraph[0]) - 1
-      y = int(digraph[1]) - 1
-      plaintext += ps[y][x]
+      x = int(chr(digraph[0])) - 1
+      y = int(chr(digraph[1])) - 1
+      plaintext += bytes([ps[x][y]])
    return plaintext
 
 def detect_ecb(ciphertext):
