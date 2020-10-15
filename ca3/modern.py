@@ -18,6 +18,7 @@ import operator
 import itertools
 import sys
 import zlib
+from functools import reduce
 
 #-----------------------------------------
 # Real-world attack functions
@@ -81,6 +82,7 @@ def lcg_recover_parameters(states, a=None, c=None, m=None):
         # so it's better to double check the result.
         if inv * (states[1] - states[0]) % m != 1:
             print('[-] Recovered modulus was incorrect.')
+            # TODO: Check for small factors to correct modulus
             return False
 
         a = (states[2] - states[1]) * inv % m
