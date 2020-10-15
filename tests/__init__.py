@@ -21,4 +21,5 @@ __all__ = ['test_break_alpha_shift',
    'test_break_vigenere',
    'test_bleichenbacher',
    'test_morse',
+   'test_show_histogram',
 ]

@@ -188,13 +188,13 @@ def show_histogram(frequency_table, width=80, sort=True):
    else:
       frequency_table = list(frequency_table.items())
 
-   print(('0%' + ' ' * (width-6) + str(max_value*100)+'%'))
-   print(('-' * width))
+   print(f'0%{" " * (width-6)}{max_value*100}%')
+   print(f"{'-' * width}")
    
    for key, value in frequency_table:
       freq_bars = int(value * normalizing_multiplier)
       if freq_bars != 0:
-         print((key + '|' + '=' * freq_bars))
+         print(f"{bytes2str(key)}|{'=' * freq_bars}")
 
 def is_base64_encoded(sample):
    '''
