@@ -238,7 +238,7 @@ def recover_rsa_modulus_from_signatures(m1, s1, m2, s2, e=0x10001):
    s1 = string_to_long(s1)
    m2 = string_to_long(m2)
    s2 = string_to_long(s2)
-   gcd_result = number.GCD( s1 ** e - m1, s2 ** e - m2 )
+   gcd_result = number.GCD( pow(s1, e) - m1, pow(s2, e) - m2 )
 
    if gcd_result < s1 or gcd_result < s2:
       # The modulus can never be smaller than our signature.
