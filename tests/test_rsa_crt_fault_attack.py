@@ -16,3 +16,10 @@ try:
    assert(answer == d)
 except:
    exit('RSA-CRT fault attack is broken!')
+
+print('Testing failed RSA-CRT fault attack...')
+bad_answer = ca.rsa_crt_fault_attack(badsig+1, message, N, verbose=True)
+try:
+   assert(bad_answer == False)
+except:
+   exit('RSA-CRT fault attack is broken!')
