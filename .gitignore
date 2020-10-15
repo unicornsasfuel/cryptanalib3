@@ -5,3 +5,4 @@ experiments
 TODO.txt
 .coverage
 runtests.py
+dist
