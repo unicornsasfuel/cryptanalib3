@@ -43,17 +43,28 @@ def lcg_recover_parameters(states, a=None, c=None, m=None):
     Once the modulus is known, the multiplier and the addend
     can be easily recovered. The first requires exactly 3
     states, the second exactly 2.
-    states - (list) Observed states of the LCG.
-    a - (int) Multiplier.
-    c - (int) Addend.
-    m - (int) Modulus.
-    Returns the tuple ``(a, c, m)`` of recovered LCG parameters.
+
+    Inputs:
+    ``[int, ...]`` states - Observed states of the LCG.
+    ``int`` a - Multiplier.
+    ``int`` c - Addend.
+    ``int`` m - Modulus.
+
+    Returns:
+    ``(int, int, int)`` The recovered LCG parameters, ``a, c, m``.
+    ``False`` when the parameters cannot be recovered
+
+    Raises:
+    ``ValueError`` if:
+      ``m`` is ``None`` and ``len(states)`` < 5
+      ``a`` is ``None`` and ``len(states)`` < 3
+      ``c`` is ``None`` and ``len(states)`` < 2
     '''
    # Start modulus recovery
    if m is None:
       if len(states) < 5:
-         print('[*] Modulus recovery requires at least 5 states.')
-         return False
+         raise ValueError('Modulus recovery requires at least 5 states.')
+
 
       diffs = [
          q - p
@@ -76,8 +87,7 @@ def lcg_recover_parameters(states, a=None, c=None, m=None):
    # Start multiplier recovery
    if a == None:
       if len(states) < 3:
-         print('[*] Multiplier recovery requires at least 3 states.')
-         return False
+         raise ValueError('Multiplier recovery requires at least 3 states.')
 
       inv = number.inverse(states[1] - states[0], m)
       # ``number.inverse`` silently fails and returns 1
@@ -94,8 +104,7 @@ def lcg_recover_parameters(states, a=None, c=None, m=None):
    # Start addend recovery
    if c == None:
       if len(states) < 2:
-         print('[*] Addend recovery requires at least 2 states.')
-         return False
+         raise ValueError('Addend recovery requires at least 2 states.')
 
       c = (states[1] - a * states[0]) % m
 
@@ -113,20 +122,26 @@ def lcg_recover_parameters(states, a=None, c=None, m=None):
 
 
 def lcg_next_states(states, num_states=5, a=None, c=None, m=None):
-   '''
+   """
       Given the current state of an LCG, return the next states
    in sequence.
-   
-      Currently, the modulus must be known. Other parameters can be
-   recovered given enough states.
-   
-   states - (list of ints) Known, complete states in order from
-      the LCG.
-   num_states - (int) The number of future states to generate.
-   a - (int) The multiplier for the LCG.
-   c - (int) The addend for the LCG.
-   m - (int) The modulus for the LCG.
-   '''
+
+   Inputs:
+   ``[int, ...]`` states - Known, complete states in order from the LCG.
+   ``int`` num_states - The number of future states to generate.
+   ``int`` a - The multiplier for the LCG.
+   ``int`` c - The addend for the LCG.
+   ``int`` m - The modulus for the LCG.
+
+   Outputs:
+   ``[int, ...]``
+
+   Raises:
+    ``ValueError`` if:
+      ``m`` is ``None`` and ``len(states)`` < 5
+      ``a`` is ``None`` and ``len(states)`` < 3
+      ``c`` is ``None`` and ``len(states)`` < 2
+   """
 
    if not all([a, c, m]):
       parameters = lcg_recover_parameters(states, a, c, m)
@@ -145,19 +160,25 @@ def lcg_next_states(states, num_states=5, a=None, c=None, m=None):
 
 
 def lcg_prev_states(states, num_states=5, a=None, c=None, m=None):
-   '''
-      Given the current state of an LCG, return the previous states
-   in sequence.
-   
-      Currently, the modulus must be known. Other parameters can be
-   recovered given enough sequential states.
-   
-   states - (list of ints) Known sequential states from the LCG.
-   num_states - (int) The number of past states to generate.
-   a - (int) The multiplier for the LCG.
-   c - (int) The addend for the LCG.
-   m - (int) The modulus for the LCG.
-   '''
+   """
+   Given a state or set of sequential states of an LCG, return the previous states in sequence.
+
+   Inputs:
+   ``[int, ...]`` states - Known sequential states from the LCG.
+   ``int`` num_states - The number of past states to generate.
+   ``int`` a - The multiplier for the LCG.
+   ``int`` c - The addend for the LCG.
+   ``int`` m - The modulus for the LCG.
+
+   Outputs:
+   ``[int, ...]``
+
+   Raises:
+   ``ValueError`` if:
+      ``m`` is ``None`` and ``len(states)`` < 5
+      ``a`` is ``None`` and ``len(states)`` < 3
+      ``c`` is ``None`` and ``len(states)`` < 2
+   """
 
    if not all([a, c, m]):
       parameters = lcg_recover_parameters(states, a, c, m)
@@ -177,8 +198,15 @@ def lcg_prev_states(states, num_states=5, a=None, c=None, m=None):
 
 def libc_rand_next_states(known_states_in_order, num_states):
    '''
-   A wrapper around lcg_next_states with hardcoded
-   a, c, and m parameters.
+   A wrapper around lcg_next_states with hardcoded a, c, and m parameters.
+
+   Inputs:
+   ``[int, ...]`` known_states_in_order - a set of known, complete, sequential states output from libc's ``rand``,
+      in order
+   ``int`` num_states - the number of states to generate following the last item in the provided states
+
+   Returns:
+   ``[int, ...]``
    '''
    return lcg_next_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2 ** 31)
 
@@ -187,7 +215,15 @@ def libc_rand_prev_states(known_states_in_order, num_states):
    '''
    A wrapper around lcg_prev_states with hardcoded
    a, c, and m parameters corresponding to libc rand(),
-   used in C and Perl 
+   used in C and Perl
+
+   Inputs:
+   ``[int, ...]`` known_states_in_order - a set of known, complete, sequential states output from libc's ``rand``,
+      in order
+   ``int`` num_states - the number of states to generate preceeding the last item in the provided states
+
+   Returns:
+   ``[int, ...]``
    '''
    return lcg_prev_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2 ** 31)
 
@@ -197,13 +233,16 @@ def rsa_crt_fault_attack(faulty_signature, message, modulus, e=0x10001, verbose=
    Given a faulty signature, a message (with padding, if any, applied),
    the modulus, and public exponent, one can derive the private key used
    to sign the message.
-   
-   faulty_signature - (int) A signature generated incorrectly
-   message - (int) The signed message, as a number, with padding applied
-   modulus - (int) The public modulus
-   e - (int) The public exponent [defaults to the common 0x10001]
 
-   Returns the private exponent if found, or False.
+   Inputs:
+   ``int`` faulty_signature - A signature generated incorrectly
+   ``int`` message - The signed message, as a number, with padding applied
+   ``int`` modulus - The public modulus
+   ``int`` e - The public exponent [defaults to the common 0x10001]
+
+   Returns:
+   ``int`` The private exponent d, if found, or
+   ``False``
    '''
    p = gcd(pow(faulty_signature, e, modulus) - message, modulus)
 
@@ -234,7 +273,9 @@ def recover_rsa_modulus_from_signatures(m1, s1, m2, s2, e=0x10001):
    ``bytes`` s2 -  The signature of the second message
    ``int`` e - The exponent to use
 
-   Returns the modulus as an integer, or False upon failure.
+   Returns:
+   ``int`` the modulus, or
+   ``False`` upon failure
    """
    m1 = bytes_to_int(m1)
    s1 = bytes_to_int(s1)
@@ -264,18 +305,17 @@ def small_message_rsa_attack(ciphertext, modulus, exponent, minutes=5, verbose=F
 
    plaintext = (ciphertext + x*modulus) ** (1/exponent)
    
-   This attack requires a ciphertext, modulus, and public exponent as inputs.
-
-   Optionally, you can also provide:
-
-   minutes (int) - A number of minutes to run the attack until giving up
-   verbose (bool) - Whether or not to print status information. Slow.
+   Inputs:
+   ``int`` ciphertext - The RSA encrypted message
+   ``int`` modulus - The N, or modulus, of the public key
+   ``int`` exponent - The e, or public exponent, of the public key
+   Optional inputs:
+   ``int`` minutes - A number of minutes to run the attack until giving up
+   ``bool`` verbose - Whether or not to print status information. Slow.
    """
    from time import time
    current_time = int(time())
    end_time = current_time + (minutes * 60)
-
-   answers = []
 
    count = multiplier = 1
 
@@ -308,10 +348,15 @@ def wiener(N, e, minutes=10, verbose=False):
 
    Developed by Maxime Puys.
 
+   Inputs:
    ``int`` N -  modulus of the RSA key to factor using Wiener's attack.
    ``int`` e - public exponent of the RSA key.
    ``float`` minutes - number of minutes to run the algorithm before giving up
    ``bool`` verbose - Periodically show how many iterations have been
+
+   Returns:
+   ``int`` one of the factors of the modulus, or
+   ``1`` if the process takes too long or fails
    """
    from time import time
    current_time = int(time())
@@ -400,10 +445,14 @@ def fermat_factor(N, minutes=10, verbose=False):
 
    http://facthacks.cr.yp.to/
 
+   Inputs:
    ``int`` N - modulus to attempt to factor using Fermat's Last Theorem
    ``float`` minutes - number of minutes to run the algorithm before giving up
    ``bool`` verbose - Periodically show how many iterations have been
       attempted
+
+   Returns:
+   ``[int, int]`` p and q, the two private factors of N
    """
    from time import time
    current_time = int(time())
@@ -449,6 +498,7 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
    Given an RSA-PKCS1-v1.5 padding oracle and a ciphertext,
    decrypt the ciphertext.
 
+   Inputs:
    ``int`` ciphertext - The ciphertext to decrypt
    ``function`` padding_oracle - A function that communicates with the padding oracle.
       The function should take a single bytestring as the ciphertext, and
@@ -457,6 +507,10 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
    ``int`` modulus - The modulus of the keypair
    ``bool`` verbose - Whether to show verbose output
    ``bool`` debug - Show very verbose output
+
+   Outputs:
+   ``bytes`` the decrypted value, or
+   ``False`` upon failure
    """
 
    getcontext().prec = len(str(modulus))
@@ -572,12 +626,16 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
 
 def xor_known_plaintext(matched_plaintext, matched_ciphertext, unmatched_ciphertext):
    """
-   Given matching plaintext/ciphertext values, derive the key
-   and decrypt another ciphertext encrypted under the same key.
+   Given matching plaintext/ciphertext values, derive the key and decrypt another ciphertext encrypted
+   under the same key.
 
-   matched_plaintext - The plaintext half of a plaintext/ciphertext pair
-   matched_ciphertext - The ciphertext half of a plaintext/ciphertext pair
-   unmatched_ciphertext - A ciphertext whose plaintext is unknown
+   Inputs:
+   ``bytes``  matched_plaintext - The plaintext half of a plaintext/ciphertext pair
+   ``bytes`` matched_ciphertext - The ciphertext half of a plaintext/ciphertext pair
+   ``bytes`` unmatched_ciphertext - A ciphertext whose plaintext is unknown
+
+   Outputs:
+   ``bytes``
    """
    return sxor(sxor(matched_plaintext, matched_ciphertext), unmatched_ciphertext)
 
@@ -587,12 +645,15 @@ def cbc_edit(old_plaintext, new_plaintext, old_ciphertext):
    Calculate the new ciphertext needed to make particular edits to plaintext
    through ciphertext modification.
 
-   old_plaintext - The old block of plaintext to be modified
-   new_plaintext - The new block of plaintext to be modified
-   old_ciphertext - The block of ciphertext to modify in order to make the
+   ``bytes`` old_plaintext - The old block of plaintext to be modified
+   ``bytes`` new_plaintext - The new block of plaintext to be modified
+   ``bytes`` old_ciphertext - The block of ciphertext to modify in order to make the
       changes. For CBC mode ciphertext, this is the previous block or IV.
       For stream ciphertext, this is the block of ciphertext corresponding
       to the old_plaintext.
+
+   Outputs:
+   ``bytes``
    '''
    if not (len(old_plaintext) == len(new_plaintext) == len(old_ciphertext)):
       raise InputLengthException
@@ -602,7 +663,7 @@ def cbc_edit(old_plaintext, new_plaintext, old_ciphertext):
 
 
 def analyze_ciphertext(data, verbose=False):
-   '''
+   """
    Takes in a list of samples and analyzes them to determine what type
    of samples they may be.
 
@@ -620,10 +681,34 @@ def analyze_ciphertext(data, verbose=False):
    CBC with fixed IV
    Hashes based on a Merkle-Damgard construction
    Stream cipher key reuse
-   
-   data - A list of samples to analyze
-   verbose - (bool) Display messages regarding analysis results
-   '''
+
+   Inputs:
+   ``[bytes, ...]`` data - A list of samples to analyze
+   ``bool`` verbose - Display messages regarding analysis results
+
+   Outputs:
+   A dict with the following keys and value types:
+   ``
+   {                                    # Do the samples appear to be...
+   "ecb": bool,                         # ...encrypted in EBC mode?
+   "cbc_fixed_iv": bool,                # ...encrypted in CBC mode, with a fixed IV?
+   "blocksize": int or False,           # ...encrypted with a block cipher? If so, the block size, else False.
+   "md_hashes": bool,                   # ...(MD2, MD4, MD5) hashes?
+   "sha1_hashes": bool,                 # ...SHA-1 hashes?
+   "sha2_hashes": bool,                 # ...SHA-2 hashes?
+   "individually_random": bool,         # ...high-entropy, when analyzed one at a time?
+   "collectively_random": bool,         # ...high-entropy, when analyzed all together?
+   "is_openssl_formatted": bool,        # ...generated with OpenSSL?
+   "key_reuse": bool,                   # ...generated with the same stream cipher key?
+   "rsa_key": bool,                     # ...RSA keys?
+   "rsa_private_key": bool,             # ...RSA private keys?
+   "rsa_small_n": bool,                 # ...RSA keys with a dangerously small key size?
+   "is_transposition_only": bool,       # ...encrypted with a transposition cipher?
+   "is_polybius": bool,                 # ...encrypted with the Polybius cipher?
+   "is_all_alpha": bool,                # ...all alphabetic?
+   "decoded_ciphertexts": [bytes, ...]  # The ciphertexts, after being decoded.
+   }
+   """
    data = [x for x in data if x != None and x != '']
    results = {}
    result_properties = ['ecb', 'cbc_fixed_iv', 'blocksize', 'md_hashes',
@@ -823,17 +908,28 @@ def analyze_ciphertext(data, verbose=False):
 
 def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True,
                     charset=frequency.optimized_charset['english']):
-   '''
-   Bytewise ECB decryption.
+   """
+   In the case that you have access to a system that will encrypt data of your choice, with secret data appended to it,
+   with any block cipher in ECB mode, and return the encrypted data to you, it is possible to recover the secret
+   data with a series of queries.
    
    Parameters:
    ``function`` encryption_oracle - A function that will encrypt arbitrary data in ECB mode with
-      a fixed secret suffix to be decrypted.
+      a fixed secret suffix to be decrypted. It must accept a single ``bytes`` input, and return the raw
+      result as ``bytes``.
    ``int`` blocksize - The block size of the cipher in use (usually 8 or 16)
+
+   Optional parameters:
    ``bool`` verbose - Provide verbose output
    ``bool`` hollywood - Silly hollywood-style visualization
-   ``bytes`` charset - A string of characters that could possibly be in the decrypted data, where the first character is the most common and the last is the least common. This should include at the very least all the possible padding characters. For instance, with PKCS#7 style padding, \\x01 through \\x10 should be included in the character set.
-   '''
+   ``bytes`` charset - A string of characters that could possibly be in the decrypted data, where the first
+      character is the most common and the last is the least common. This should include at the very least all
+      the possible padding characters. For instance, with PKCS#7 style padding, \\x01 through \\x10 should be
+      included in the character set.
+
+   Returns:
+   The secret data.
+   """
 
    # ------------------------------
    # Helper functions for ECB CPA bytewise decryption
@@ -911,7 +1007,7 @@ def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True
                # Silly hollywood style visualization of decryption process
                current_progress = str(output_mask(decrypted_bytes, string.printable))
                chaff = str(output_mask(bytes([char]) * (block_size - current_byte), hollywood_mask))
-               sys.stdout.write(f"\r {current_progress[:-5]}{chaff[:-5]}")
+               sys.stdout.write(f"\r {current_progress}{chaff}")
                sys.stdout.flush()
             if try_forever_egghunt_encryption_oracle(encryption_oracle, block_size,
                                                      padding + egg + working_block + bytes([char]))[
@@ -938,23 +1034,31 @@ can be used with Vaudenay's technique
 
 def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type='pkcs7', iv=None, prefix=b'',
                            verbose=False, hollywood=True, charset=frequency.optimized_charset['english']):
-   '''
+   """
    Given a padding oracle function that accepts raw ciphertext and returns
    True for good padding or False for bad padding, and a ciphertext to decrypt:
    Perform Vaudenay's PO -> DO attack
    
    Parameters:
    ``function`` padding_oracle - A function that takes a ciphertext as its only parameter
-      and returns true for good padding or false for bad padding
+      and returns ``True`` for good padding or ``False`` for bad padding
    ``bytes`` ciphertext - The ciphertext to be decrypted
    ``int`` block_size - The block size of the cipher in use
+
+   Optional parameters:
    ``string`` padding_type - Type of padding in use. Currently only pkcs7 is supported.
-   ``bytes`` iv - IV for decryption of first block. Must be one block in length.
+   ``bytes`` iv - IV for decryption of first block, if known. Must be one block in length.
    ``bytes`` prefix - Ciphertext to place before any ciphertext being sent to the oracle.
    ``bool`` verbose - Provide direct output and progress indicator
    ``bool`` hollywood - Do hollywood style progress indication. Requires verbose.
-   ``bytes`` charset - A string of characters that could possibly be in the decrypted data, where the first character is the most common and the last is the least common. This should include at the very least all the possible padding characters. For instance, with PKCS#7 style padding, \\x01 through \\x10 should be included in the character set.
-   '''
+   ``bytes`` charset - A string of characters that could possibly be in the decrypted data,
+      where the first character is the most common and the last is the least common. This should include
+      at the very least all the possible padding characters. For instance, with PKCS#7 style padding,
+      \\x01 through \\x10 should be included in the character set.
+
+   Returns:
+   ``bytes`` The data, decrypted.
+   """
    plaintext = intermediate_block = b''
    ciphertext_blocks = split_into_blocks(ciphertext, block_size)
    # --------------
@@ -977,7 +1081,9 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
       # used as an IV in practice.
       if verbose:
          print(
-            '[*] No IV was provided, using a block of null bytes instead. Unless a block of null bytes is being used as the IV, expect the first block to be garbled.')
+            '[*] No IV was provided, using a block of null bytes instead. Unless a block of null bytes is being'\
+            'used as the IV, expect the first block to be garbled.'
+         )
       prev_block = b"\x00" * block_size
    #
    # --------------
@@ -1010,7 +1116,7 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
                # Silly hollywood style visualization of decryption process
                current_block = sxor(intermediate_block, prev_block[:-(current_padding_byte - 1)])
                chaff = bytes([char]) * (block_size - current_padding_byte)
-               sys.stdout.write("\r" + str(output_mask(chaff, hollywood_mask)))
+               sys.stdout.write("\r" + str(output_mask(current_block + chaff, hollywood_mask)))
                sys.stdout.flush()
             new_byte = char ^ current_padding_byte ^ original_byte
             temp_ciphertext[flip_index - current_padding_byte] = new_byte
@@ -1194,9 +1300,8 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
    Stream ciphers with fixed key/IV
    Multi-byte XOR with fixed key
    Block ciphers in a stream mode (CTR, GCM, etc) with fixed key/IV
-   
-   Returns an array of the best candidate decryption for each ciphertext represented as strings
 
+   Inputs:
    ``[bytes, ...]`` ciphertexts - A list of ciphertexts to attack
    ``dict`` pt_freq_table - A frequency table matching the expected frequency
       distribution of the correct plaintext, as generated by
@@ -1204,6 +1309,9 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
       frequencies for single characters.
    ``int`` accuracy - A number from 1-100 to balance between speed and accuracy
    ``bool`` verbose - Whether or not to show progress
+
+   Returns:
+   ``[bytes, ...]`` An array of the best candidate decryption for each ciphertext represented as strings
    '''
 
    def right_pad_with_none(array, length):
@@ -1273,11 +1381,14 @@ def detect_hash_format(words, hashes):
    some hash like md5("username:password:userid")
    
    Matches against list of hashes provided in raw or hex form as "hashes" param
-   
-   Returns tuple as (matching_plaintext, hash_type) or False for no match
 
-   words - A list of words that may be in the plaintext
-   hashes - A set of captured hashes to check against
+   Parameters:
+   ``[bytes, ...]`` words - A list of words that may be in the plaintext
+   ``[bytes, ...]`` hashes - A set of captured hashes to check against
+
+   Returns:
+   ``bytes, str`` as (matching_plaintext, hash_type), or
+   ``False`` for no match
    '''
    num_words = len(words)
    if len(words) > 7:
@@ -1327,14 +1438,17 @@ def hastad_broadcast_attack(key_message_pairs, exponent):
    unique public keys with the same exponent, where the exponent is lower than
    the number of distinct key/ciphertext pairs.
 
-   key_message_pairs should be in the form of a list of 2-tuples like so:
-   [(ciphertext1, pubkey1), (ciphertext2, pubkey2), (ciphertext3, pubkey3)]
-
-   exponent should simply be an integer.
-
    (This function is based on work by Christoph Egger
    <christoph@christoph-egger.org>
    https://www.christoph-egger.org/weblog/entry/46)
+
+   Parameters:
+   ``[(int,int), ...]``` key_message_pairs - should be in the form of a list of 2-tuples like so:
+      ``[(ciphertext1, modulus1), (ciphertext2, modulus2), (ciphertext3, modulus3)]``
+   ``int`` exponent - the exponent e of the public keys
+
+   Returns:
+   ``int`` the message
    """
    x, n = chinese_remainder_theorem(key_message_pairs)
    realnum = int(nroot(x, exponent))
@@ -1346,17 +1460,20 @@ def dsa_repeated_nonce_attack(r, msg1, s1, msg2, s2, n, verbose=False):
    '''
    Recover k (nonce) and Da (private signing key) from two DSA or ECDSA signed messages
    with identical k values
-   
-   Takes the following arguments:
-   bytes: r (r value of signatures)
-   bytes: msg1 (first message)
-   bytes: s1 (s value of first signature)
-   bytes: msg2 (second message)
-   bytes: s2 (s value of second signature)
-   int: n (curve order for ECDSA or modulus (q parameter) for DSA)
-   
+
    adapted from code by Antonio Bianchi (antoniob@cs.ucsb.edu)
    <http://antonio-bc.blogspot.com/2013/12/mathconsole-ictf-2013-writeup.html>
+
+   Parameters:
+   ``bytes`` r (r value of signatures)
+   ``bytes`` msg1 (first message)
+   ``bytes`` s1 (s value of first signature)
+   ``bytes`` msg2 (second message)
+   ``bytes`` s2 (s value of second signature)
+   ``int`` n (curve order for ECDSA or modulus (q parameter) for DSA)
+
+   Returns:
+   ``int, int`` The nonce and private key ``(k, Da)``
    '''
    r = int.from_bytes(r, 'big')
    s1 = int.from_bytes(s1, 'big')
@@ -1383,15 +1500,18 @@ def retrieve_iv(decryption_oracle, ciphertext, blocksize):
    Retrieve the IV used in a given CBC decryption by decrypting
    [\\x00*(blocksize*2)][ciphertext] and XORing the first two
    resulting blocks of data.
-   Takes a decryption oracle function that consumes raw ciphertext
-   and returns raw plaintext, a ciphertext, and the block size of
-   the cipher.
-   Requires at least a two-block long valid ciphertext.
-   
+
    People have the strange habit of using a static IV that's
    identical to the key. This function is really useful there >:3
-   
-   Returns the IV.
+
+   Parameters:
+   ``function`` decryption_oracle - A function that queries a decryption oracle that consumes raw ciphertext as
+      ``bytes`` and returns raw plaintext as ``bytes``
+   ``bytes`` ciphertext - a ciphertext encrypted in CBC mode that's at least two blocks in length
+   ``int`` blocksize - the block size of the cipher in use
+
+   Returns:
+   ``bytes`` the IV.
    '''
    if len(ciphertext) < 2 * blocksize:
       return False  # ciphertext must be at least two blocks long
