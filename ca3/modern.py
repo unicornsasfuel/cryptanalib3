@@ -1090,6 +1090,9 @@ def break_single_byte_xor(ciphertext,num_answers=20,pt_freq_table=frequency.freq
    Raises:
    ``ValueError`` if ``num_answers`` is larger than 256.
    '''
+   if num_answers > 256:
+      raise ValueError('num_answers should not be higher than 256')
+
    answers = {}
    ciphertext_len = len(ciphertext)
    potential_keys = range(256)
