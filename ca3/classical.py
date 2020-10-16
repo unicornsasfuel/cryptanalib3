@@ -381,7 +381,7 @@ def break_vigenere(ciphertext, scan_range, num_answers=1, max_best_shifts=2,
    ``[bytes, ...]`` A list of potential Vigenere keys ``num_answers`` long.
    '''
 
-   def _break_shift(ciphertext, ref_letter_freq, correlation=False):
+   def _break_shift(ciphertext, ref_letter_freq):
       # Measure letter frequency
       n = float(len(ciphertext))
       freq = [0] * 26
@@ -389,41 +389,31 @@ def break_vigenere(ciphertext, scan_range, num_answers=1, max_best_shifts=2,
          freq[to_number(symbol)] += 1
       freq = [i / n for i in freq]
 
-      shifts = []
       # Perform frequency analysis
-      if correlation:
-         # Break shift cipher by cross correlation with reference frequency
-         cross_correlation = [sum([ref_letter_freq[i] * freq[(i + shift) % 26] for i in range(26)]) for shift in
-                              range(26)]
-         # Sort the shift guesses by descending correlation value
-         shifts = sorted(list(enumerate(chi_square_shifts)), key=lambda tup: tup[1], reverse=True)
-      else:
-         # Break shift cipher by chi-square like comparison of distribution with reference
-         chi_square_quantile = 52.62
-         chi_square_shifts = []
-         for shift in range(26):
-            chi_square = []
-            for k in range(26):
-               chi_square.append((freq[(k + shift) % 26] - ref_letter_freq[k]) ** 2 / ref_letter_freq[k])
-            chi_square_shifts.append(n * sum(chi_square))
-         # Sort the shift guesses by ascending chi square value
-         shifts = sorted(list(enumerate(chi_square_shifts)), key=lambda tup: tup[1])
-         shifts = [(to_char(tup[0]), tup[1]) for tup in shifts]
+      # Break shift cipher by chi-square like comparison of distribution with reference
+      chi_square_shifts = []
+      for shift in range(26):
+         chi_square = []
+         for k in range(26):
+            chi_square.append((freq[(k + shift) % 26] - ref_letter_freq[k]) ** 2 / ref_letter_freq[k])
+         chi_square_shifts.append(n * sum(chi_square))
+      # Sort the shift guesses by ascending chi square value
+      shifts = sorted(list(enumerate(chi_square_shifts)), key=lambda tup: tup[1])
+      shifts = [(to_char(tup[0]), tup[1]) for tup in shifts]
 
-         # Filter out the best few
-         shifts_trunc = list(shifts)
-         for k in range(len(shifts) - 1):
-            if shifts[k + 1][1] < 50:
-               continue
-            elif shifts[k + 1][1] / shifts[k][1] > 1.6:
-               # If the step from this chi square value to the next higher one is too big,
-               # export only the list up to this value.
-               shifts_trunc = shifts[:k + 1]
-               break
+      # Filter out the best few
+      shifts_trunc = list(shifts)
+      for k in range(len(shifts) - 1):
+         if shifts[k + 1][1] < 50:
+            continue
+         elif shifts[k + 1][1] / shifts[k][1] > 1.6:
+            # If the step from this chi square value to the next higher one is too big,
+            # export only the list up to this value.
+            shifts_trunc = shifts[:k + 1]
+            break
       return list(zip(*shifts_trunc))[0]
 
    def _count_up(ll_indices, list_of_lists):
-      digit = 0
       for digit in range(len(ll_indices)):
          # For every digit: start increasing the left most
          ll_indices[digit] += 1
@@ -469,7 +459,7 @@ def break_vigenere(ciphertext, scan_range, num_answers=1, max_best_shifts=2,
       for i, sub_block in enumerate(sub_blocks):
          # Apply shift breaker. That one works on letter frequency analysis and returns
          # a list of the most likely shift guesses.
-         shifts = _break_shift(sub_block, ref_letter_freq, False)
+         shifts = _break_shift(sub_block, ref_letter_freq)
          digits_shifts.append(shifts[:min(len(shifts), max_best_shifts)])
 
       # Out of these shift guesses, construct all possible combinations of complete keys
