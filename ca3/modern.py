@@ -180,6 +180,7 @@ def libc_rand_next_states(known_states_in_order, num_states):
    '''
    return lcg_next_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2**31)
 
+
 def libc_rand_prev_states(known_states_in_order, num_states):
    '''
    A wrapper around lcg_prev_states with hardcoded
@@ -234,10 +235,10 @@ def recover_rsa_modulus_from_signatures(m1, s1, m2, s2, e=0x10001):
 
    Returns the modulus as an integer, or False upon failure.
    """
-   m1 = string_to_long(m1)
-   s1 = string_to_long(s1)
-   m2 = string_to_long(m2)
-   s2 = string_to_long(s2)
+   m1 = bytes_to_int(m1)
+   s1 = bytes_to_int(s1)
+   m2 = bytes_to_int(m2)
+   s2 = bytes_to_int(s2)
    gcd_result = number.GCD( pow(s1, e) - m1, pow(s2, e) - m2 )
 
    if gcd_result < s1 or gcd_result < s2:
@@ -1036,6 +1037,9 @@ def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=Fal
    ``bool`` is_padding_oracle - Indicates whether the oracle function provided is a
       padding oracle
    ``bool`` verbose - Provide verbose output
+
+   Returns:
+   ``bytes`` The encrypted version of ``new_plaintext``
    '''
    new_plaintext = pkcs7_pad(new_plaintext, block_size)
    def __padding_decryption_oracle(ciphertext):
@@ -1072,36 +1076,29 @@ def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=Fal
 def break_single_byte_xor(ciphertext,num_answers=20,pt_freq_table=frequency.frequency_tables['english'], detect_words=True, charset=None, verbose=False):
    '''
    Return a list of likely successful single byte XOR decryptions sorted by score
-   
+
+   Inputs:
    ``bytes`` ciphertext - Ciphertext to attack
    ``int`` num_answers - maximum number of answers to return
    ``dict`` pt_freq_table - A frequency table for the expected plaintext, as generated
-      by ``generate_frequency_table()``.
+      by ``generate_frequency_table()``
+   ``bool`` detect_words - Whether to use word detection for scoring results
+
+   Returns:
+   ``[bytes, ...]`` The ``num_answers`` best answers, sorted by similarity to expected plaintext
+
+   Raises:
+   ``ValueError`` if ``num_answers`` is larger than 256.
    '''
    answers = {}
    ciphertext_len = len(ciphertext)
+   potential_keys = range(256)
 
-   # If a pre-generated charset sorted by frequency descending is not provided, make one
-   if charset != None:
-      expected_charset = charset
-   else:
-      expected_charset = generate_optimized_charset_from_frequency(pt_freq_table)
-
-   # Generate a charset sorted by frequency for the plaintext
-   sample_charset = generate_optimized_charset(ciphertext)
-   # XOR the charsets together and generate another optimized charset to be used as possible keys
-   potential_keys = generate_optimized_charset(sxor(expected_charset,sample_charset))
-   # If the number of potential keys is smaller than $num_answers, alert the user and use what we have
-   num_keys = min(len(potential_keys),num_answers)
-   if num_keys < num_answers and verbose:
-      print('[*] Could not return the requested number of answers. Returning all possible answers.')
-   
-   # Try xor with the best key bytes
-   for key in potential_keys[:num_keys]:
+   for key in potential_keys:
       answer = sxor(ciphertext, bytes([key])*ciphertext_len)
       answers[answer] = (detect_plaintext(answer,pt_freq_table=pt_freq_table,detect_words=detect_words),key)
    # Return the best resulting plaintexts and associated score sorted by score
-   return sorted(list(answers.items()), key=lambda x: x[1])
+   return sorted(list(answers.items()), key=lambda x: x[1])[:num_answers]
 
 def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_table=frequency.frequency_tables['english'], verbose=False, min_keysize=2):
    '''
