@@ -23,4 +23,5 @@ __all__ = ['test_break_alpha_shift',
    'test_morse',
    'test_show_histogram',
    'test_polybius',
+   'test_rsa_modulus_sig_recovery',
 ]
