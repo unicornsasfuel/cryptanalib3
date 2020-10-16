@@ -1,9 +1,9 @@
-'''
+"""
 Cryptanalib - A series of useful functions for cryptanalysis
 by Daniel "unicornFurnace" Crowley
 
 dependencies - PyCryptodome
-'''
+"""
 from Crypto.Hash import *
 from Crypto.Util import number
 
@@ -12,6 +12,7 @@ from .helpers import *
 from decimal import *
 
 import string
+
 hollywood_mask = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
 from . import frequency
 import operator
@@ -20,15 +21,16 @@ import sys
 import zlib
 from functools import reduce
 
-#-----------------------------------------
+
+# -----------------------------------------
 # Real-world attack functions
 #
 # These functions are meant to be called directly to attack cryptosystems implemented
 # with modern crypto, or at least cryptosystems likely to be found in the real world.
-#-----------------------------------------
+# -----------------------------------------
 
 def lcg_recover_parameters(states, a=None, c=None, m=None):
-    '''
+   '''
     Given the observed output of a Linear Congruential Generator
     calculates the modulus, the mutiplier, and the addend.
     Modulus recovery relies on the property that, given a set of
@@ -47,67 +49,67 @@ def lcg_recover_parameters(states, a=None, c=None, m=None):
     m - (int) Modulus.
     Returns the tuple ``(a, c, m)`` of recovered LCG parameters.
     '''
-    # Start modulus recovery
-    if m == None:
-        if len(states) < 5:
-            print('[*] Modulus recovery requires at least 5 states.')
-            return False
+   # Start modulus recovery
+   if m is None:
+      if len(states) < 5:
+         print('[*] Modulus recovery requires at least 5 states.')
+         return False
 
-        diffs = [
-            q - p
-            for p, q in zip(states, states[1:])
-        ]
+      diffs = [
+         q - p
+         for p, q in zip(states, states[1:])
+      ]
 
-        zeroes = [
-            d2 * d0 - d1 ** 2
-            for d0, d1, d2 in zip(diffs, diffs[1:], diffs[2:])
-        ]
+      zeroes = [
+         d2 * d0 - d1 ** 2
+         for d0, d1, d2 in zip(diffs, diffs[1:], diffs[2:])
+      ]
 
-        m = reduce(number.GCD, zeroes)
+      m = reduce(number.GCD, zeroes)
 
-        if m < 2:
-            print('[-] Modulus could not be recovered, retry with different states.')
-            return False
-        else:
-            print('[+] Modulus recovered: ', m)
+      if m < 2:
+         print('[-] Modulus could not be recovered, retry with different states.')
+         return False
+      else:
+         print('[+] Modulus recovered: ', m)
 
-    # Start multiplier recovery
-    if a == None:
-        if len(states) < 3:
-            print('[*] Multiplier recovery requires at least 3 states.')
-            return False
+   # Start multiplier recovery
+   if a == None:
+      if len(states) < 3:
+         print('[*] Multiplier recovery requires at least 3 states.')
+         return False
 
-        inv = number.inverse(states[1] - states[0], m)
-        # ``number.inverse`` silently fails and returns 1
-        # so it's better to double check the result.
-        if inv * (states[1] - states[0]) % m != 1:
-            print('[-] Recovered modulus was incorrect.')
-            # TODO: Check for small factors to correct modulus
-            return False
+      inv = number.inverse(states[1] - states[0], m)
+      # ``number.inverse`` silently fails and returns 1
+      # so it's better to double check the result.
+      if inv * (states[1] - states[0]) % m != 1:
+         print('[-] Recovered modulus was incorrect.')
+         # TODO: Check for small factors to correct modulus
+         return False
 
-        a = (states[2] - states[1]) * inv % m
+      a = (states[2] - states[1]) * inv % m
 
-        print('[+] Multiplier recovered: ', a)
+      print('[+] Multiplier recovered: ', a)
 
-    # Start addend recovery
-    if c == None:
-        if len(states) < 2:
-            print('[*] Addend recovery requires at least 2 states.')
-            return False
+   # Start addend recovery
+   if c == None:
+      if len(states) < 2:
+         print('[*] Addend recovery requires at least 2 states.')
+         return False
 
-        c = (states[1] - a * states[0]) % m
+      c = (states[1] - a * states[0]) % m
 
-    # Run a final check, to ensure the recovered parameters
-    # are correct. This is done by starting from ``states[0]``
-    # and testing if all other states can be generated.
-    try:
-        for current_state, next_state in zip(states, states[1:]):
-            assert next_state == (current_state * a + c) % m
-    except AssertionError:
-        print('[-] Could not recover LCG parameters.')
-        return False
+   # Run a final check, to ensure the recovered parameters
+   # are correct. This is done by starting from ``states[0]``
+   # and testing if all other states can be generated.
+   try:
+      for current_state, next_state in zip(states, states[1:]):
+         assert next_state == (current_state * a + c) % m
+   except AssertionError:
+      print('[-] Could not recover LCG parameters.')
+      return False
 
-    return a, c, m
+   return a, c, m
 
 
 def lcg_next_states(states, num_states=5, a=None, c=None, m=None):
@@ -126,12 +128,12 @@ def lcg_next_states(states, num_states=5, a=None, c=None, m=None):
    m - (int) The modulus for the LCG.
    '''
 
-   if not all([a,c,m]):
-      parameters = lcg_recover_parameters(states,a,c,m)
+   if not all([a, c, m]):
+      parameters = lcg_recover_parameters(states, a, c, m)
       if parameters == False:
          return False
       else:
-         (a,c,m) = parameters
+         (a, c, m) = parameters
 
    current_state = states[-1]
    next_states = []
@@ -157,18 +159,18 @@ def lcg_prev_states(states, num_states=5, a=None, c=None, m=None):
    m - (int) The modulus for the LCG.
    '''
 
-   if not all([a,c,m]):
-      parameters = lcg_recover_parameters(states,a,c,m)
+   if not all([a, c, m]):
+      parameters = lcg_recover_parameters(states, a, c, m)
       if parameters == False:
          return False
       else:
-         (a,c,m) = parameters
+         (a, c, m) = parameters
 
    current_state = states[0]
    prev_states = []
    for i in range(num_states):
       current_state = (((current_state - c) % m) * number.inverse(a, m)) % m
-      prev_states.insert(0,current_state)
+      prev_states.insert(0, current_state)
 
    return prev_states
 
@@ -178,7 +180,7 @@ def libc_rand_next_states(known_states_in_order, num_states):
    A wrapper around lcg_next_states with hardcoded
    a, c, and m parameters.
    '''
-   return lcg_next_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2**31)
+   return lcg_next_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2 ** 31)
 
 
 def libc_rand_prev_states(known_states_in_order, num_states):
@@ -187,8 +189,7 @@ def libc_rand_prev_states(known_states_in_order, num_states):
    a, c, and m parameters corresponding to libc rand(),
    used in C and Perl 
    '''
-   return lcg_prev_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2**31)
-
+   return lcg_prev_states(known_states_in_order, num_states, a=1103515245, c=12345, m=2 ** 31)
 
 
 def rsa_crt_fault_attack(faulty_signature, message, modulus, e=0x10001, verbose=False):
@@ -204,7 +205,7 @@ def rsa_crt_fault_attack(faulty_signature, message, modulus, e=0x10001, verbose=
 
    Returns the private exponent if found, or False.
    '''
-   p = gcd( pow(faulty_signature, e, modulus) - message, modulus )
+   p = gcd(pow(faulty_signature, e, modulus) - message, modulus)
 
    if p == 1:
       if verbose:
@@ -212,7 +213,7 @@ def rsa_crt_fault_attack(faulty_signature, message, modulus, e=0x10001, verbose=
       return False
    else:
       q = modulus // p
-      d = derive_d_from_pqe(p,q,e)
+      d = derive_d_from_pqe(p, q, e)
       print('[!] Factored private key.')
       return d
 
@@ -239,7 +240,7 @@ def recover_rsa_modulus_from_signatures(m1, s1, m2, s2, e=0x10001):
    s1 = bytes_to_int(s1)
    m2 = bytes_to_int(m2)
    s2 = bytes_to_int(s2)
-   gcd_result = number.GCD( pow(s1, e) - m1, pow(s2, e) - m2 )
+   gcd_result = number.GCD(pow(s1, e) - m1, pow(s2, e) - m2)
 
    if gcd_result < s1 or gcd_result < s2:
       # The modulus can never be smaller than our signature.
@@ -248,7 +249,6 @@ def recover_rsa_modulus_from_signatures(m1, s1, m2, s2, e=0x10001):
 
    else:
       return int(gcd_result)
-
 
 
 def small_message_rsa_attack(ciphertext, modulus, exponent, minutes=5, verbose=False):
@@ -276,18 +276,17 @@ def small_message_rsa_attack(ciphertext, modulus, exponent, minutes=5, verbose=F
    end_time = current_time + (minutes * 60)
 
    answers = []
-   
+
    count = multiplier = 1
 
-
    if verbose:
-      print("Starting small message RSA attack...") 
+      print("Starting small message RSA attack...")
 
    while True:
-      candidate_plaintext = nroot(Decimal(ciphertext + multiplier*modulus),exponent)
+      candidate_plaintext = nroot(Decimal(ciphertext + multiplier * modulus), exponent)
       candidate_plaintext = int(candidate_plaintext)
-      if pow(candidate_plaintext,exponent,modulus) == ciphertext:
-         answer_bytelen = int(ceil(number.size(candidate_plaintext)/8))
+      if pow(candidate_plaintext, exponent, modulus) == ciphertext:
+         answer_bytelen = int(ceil(number.size(candidate_plaintext) / 8))
          return candidate_plaintext.to_bytes(answer_bytelen, 'big')
 
       if count % 10 == 0:
@@ -299,8 +298,8 @@ def small_message_rsa_attack(ciphertext, modulus, exponent, minutes=5, verbose=F
                sys.stdout.write("\rCurrent iteration: %d" % count)
                sys.stdout.flush()
       count += 1
-      multiplier += 1   
-   
+      multiplier += 1
+
 
 def wiener(N, e, minutes=10, verbose=False):
    """
@@ -323,15 +322,15 @@ def wiener(N, e, minutes=10, verbose=False):
       Returns the continued fraction of x/y as a list.
       """
 
-      a = x//y
-      b = a*y
+      a = x // y
+      b = a * y
       ret = [a]
       while b != x:
-         x, y = y, x-b
-         a = x//y
-         b = a*y
+         x, y = y, x - b
+         a = x // y
+         b = a * y
          ret += [a]
-     
+
       return ret
 
    def continuants(frac):
@@ -340,33 +339,32 @@ def wiener(N, e, minutes=10, verbose=False):
       """
 
       prec = (frac[0], 1)
-      cur  = (frac[1]*frac[0]+1, frac[1])
-      
+      cur = (frac[1] * frac[0] + 1, frac[1])
+
       ret = [prec, cur]
       for x in frac[2:]:
-          cur,prec = (x*cur[0] + prec[0], x*cur[1] + prec[1]), cur
-          ret += [cur]
+         cur, prec = (x * cur[0] + prec[0], x * cur[1] + prec[1]), cur
+         ret += [cur]
 
       return ret
-
 
    def polRoot(a, b, c):
       """
       Return an integer root of polynom ax^2 + bx + c.
       """
 
-      delta = abs(b*b - 4*a*c)
-      return (-b - Decimal.sqrt(delta))/(2*a)
+      delta = abs(b * b - 4 * a * c)
+      return (-b - Decimal.sqrt(delta)) / (2 * a)
 
    if verbose:
-       print("Computing continued fraction.")
+      print("Computing continued fraction.")
 
    getcontext().prec = 4096
    N = Decimal(N)
    frac = contfrac(e, N)
 
    if verbose:
-       print("Computing continuants from fraction.")
+      print("Computing continuants from fraction.")
 
    conv = continuants(frac)
    current_continuant = 1
@@ -375,22 +373,22 @@ def wiener(N, e, minutes=10, verbose=False):
    for k, d in conv:
       if time() > end_time:
          if verbose:
-             print("Time expired, returning 1.")
-             return 1
+            print("Time expired, returning 1.")
+            return 1
 
-      if k>0:
-         phi = (e*d - 1)//k
+      if k > 0:
+         phi = (e * d - 1) // k
          if verbose:
-              sys.stdout.write("\rTesting continuant %d of %d" % (current_continuant, total_continuants))
-              current_continuant += 1
+            sys.stdout.write("\rTesting continuant %d of %d" % (current_continuant, total_continuants))
+            current_continuant += 1
 
-         root = polRoot(1, N-phi+1, N)
+         root = polRoot(1, N - phi + 1, N)
 
          if root != 0:
-             if N%root == 0:
-                if verbose:
-                    print("\nModulus factored!")
-                return -root
+            if N % root == 0:
+               if verbose:
+                  print("\nModulus factored!")
+               return -root
 
    return 1
 
@@ -420,9 +418,9 @@ def fermat_factor(N, minutes=10, verbose=False):
 
    if verbose:
       print("Starting factorization...")
-   
-   if N <= 0:        return [1,N]
-   if N % 2 == 0:    return [2,N/2]
+
+   if N <= 0:        return [1, N]
+   if N % 2 == 0:    return [2, N / 2]
 
    sqrt_n = N.sqrt()
    a = ceil(sqrt_n)
@@ -432,17 +430,16 @@ def fermat_factor(N, minutes=10, verbose=False):
       a += 1
       count += 1
       if verbose:
-         if (count % 1000000 == 0):
+         if count % 1000000 == 0:
             sys.stdout.write("\rCurrent iterations: %d" % count)
             sys.stdout.flush()
       if time() > end_time:
          if verbose: print("\nTime expired, returning [1,N]")
-         return [1,N]
+         return [1, N]
 
    b = Decimal.sqrt(a ** 2 - N)
    print("\nModulus factored!")
    return [int(a - b), int(a + b)]
-
 
 
 def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=False, debug=False):
@@ -467,21 +464,20 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
    modulus_bit_length = bit_length(int(modulus))
    modulus_bit_length += (modulus_bit_length % 8)
    k = modulus_bit_length // 8
-   B = 2 ** ( 8 * (k-2) )
+   B = 2 ** (8 * (k - 2))
    # constants to avoid recomputation
    B2 = 2 * B
    B3 = 3 * B
 
    def get_r_values(s, M):
       R = []
-      for a,b in M:
-         low_val = ceil( (a * Decimal(s) - B3 + 1)/modulus )
-         high_val = floor( (b * Decimal(s) - B2)/modulus )
-         R.extend([x for x in range(low_val,high_val+1)])
+      for a, b in M:
+         low_val = ceil((a * Decimal(s) - B3 + 1) / modulus)
+         high_val = floor((b * Decimal(s) - B2) / modulus)
+         R.extend([x for x in range(low_val, high_val + 1)])
       if verbose and len(R) > 1:
          print("Found %d possible r values, trying to narrow to one..." % len(R))
       return R
-
 
    def step2(search_number, i, M):
       if i == 1 or len(M) > 1:
@@ -496,15 +492,15 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
             if padding_oracle(number.long_to_bytes(test_ciphertext)):
                if verbose:
                   print("Found s1! Starting to narrow search interval...")
-               return(search_number)
+               return (search_number)
       else:
          # Step 2c
          a = list(M)[0][0]
          b = list(M)[0][1]
-         r = ceil( 2*(b * Decimal(search_number) - B2)/modulus )
+         r = ceil(2 * (b * Decimal(search_number) - B2) / modulus)
          while True:
-            s_range_bottom = ceil(( B2 + r * Decimal(modulus) ) / b)
-            s_range_top = floor(( B3-1 + r * Decimal(modulus) ) / a)
+            s_range_bottom = ceil((B2 + r * Decimal(modulus)) / b)
+            s_range_top = floor((B3 - 1 + r * Decimal(modulus)) / a)
             s = s_range_bottom
             while s <= s_range_top:
                test_ciphertext = c0 * pow(s, exponent, modulus)
@@ -516,10 +512,10 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
 
    def step3(s, M, R):
       new_M = set([])
-      for a,b in M:
+      for a, b in M:
          for r in R:
-            new_a = max(a, ceil( (B2 + r * Decimal(modulus))/s ) )
-            new_b = min(b, floor( (B3 - 1 + r * Decimal(modulus))/s ) )
+            new_a = max(a, ceil((B2 + r * Decimal(modulus)) / s))
+            new_b = min(b, floor((B3 - 1 + r * Decimal(modulus)) / s))
             if new_a <= new_b:
                new_M |= set([(new_a, new_b)])
       if len(new_M) == 0:
@@ -536,7 +532,7 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
          print("Original ciphertext corresponds to a PKCS1v1.5-conformant message. Skipping blinding...")
       else:
          print("Original ciphertext does not correspond to a PKCS1v.1.5-conformant message. Blinding...")
-      
+
    c0 = number.bytes_to_long(ciphertext)
    M = set([(B2, B3 - 1)])
    # if the ciphertext provided corresponds to a PKCS1v1.5-conforming message, skip blinding
@@ -563,19 +559,18 @@ def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=F
          sys.stdout.write("\rCurrent interval bit length: %d | Iterations finished: %d  " % (interval_bit_length, i))
          sys.stdout.flush()
       if len(M) == 1 and interval_bit_length < 8:
-         for message in range(list_M[0][0],list_M[0][1]+1):
+         for message in range(list_M[0][0], list_M[0][1] + 1):
             if debug:
                print('Debug: encrypted message is %r' % number.long_to_bytes(int(pow(Decimal(message), s0, modulus))))
             if int(pow(Decimal(message), exponent, modulus)) == c0:
-               return number.long_to_bytes(rsa_unblind(message,s0,modulus))
+               return number.long_to_bytes(rsa_unblind(message, s0, modulus))
          # Something went wrong...
          print("something went wrong.")
          return False
       i += 1
 
 
-
-def xor_known_plaintext(matched_plaintext,matched_ciphertext,unmatched_ciphertext):
+def xor_known_plaintext(matched_plaintext, matched_ciphertext, unmatched_ciphertext):
    """
    Given matching plaintext/ciphertext values, derive the key
    and decrypt another ciphertext encrypted under the same key.
@@ -584,11 +579,10 @@ def xor_known_plaintext(matched_plaintext,matched_ciphertext,unmatched_ciphertex
    matched_ciphertext - The ciphertext half of a plaintext/ciphertext pair
    unmatched_ciphertext - A ciphertext whose plaintext is unknown
    """
-   return sxor(sxor(matched_plaintext,matched_ciphertext),unmatched_ciphertext)
+   return sxor(sxor(matched_plaintext, matched_ciphertext), unmatched_ciphertext)
 
 
-
-def cbc_edit(old_plaintext,new_plaintext,old_ciphertext):
+def cbc_edit(old_plaintext, new_plaintext, old_ciphertext):
    '''
    Calculate the new ciphertext needed to make particular edits to plaintext
    through ciphertext modification.
@@ -603,10 +597,8 @@ def cbc_edit(old_plaintext,new_plaintext,old_ciphertext):
    if not (len(old_plaintext) == len(new_plaintext) == len(old_ciphertext)):
       raise InputLengthException
 
-   edits = sxor(old_plaintext,new_plaintext)
-   return sxor(old_ciphertext,edits)
-
-
+   edits = sxor(old_plaintext, new_plaintext)
+   return sxor(old_ciphertext, edits)
 
 
 def analyze_ciphertext(data, verbose=False):
@@ -635,17 +627,19 @@ def analyze_ciphertext(data, verbose=False):
    data = [x for x in data if x != None and x != '']
    results = {}
    result_properties = ['ecb', 'cbc_fixed_iv', 'blocksize', 'md_hashes',
-   'sha1_hashes', 'sha2_hashes', 'individually_random', 'collectively_random', 'is_openssl_formatted', 'decoded_ciphertexts', 'key_reuse', 'rsa_key', 'rsa_private_key', 'rsa_small_n']
+                        'sha1_hashes', 'sha2_hashes', 'individually_random', 'collectively_random',
+                        'is_openssl_formatted', 'decoded_ciphertexts', 'key_reuse', 'rsa_key', 'rsa_private_key',
+                        'rsa_small_n']
    result_properties.extend(['is_transposition_only', 'is_polybius', 'is_all_alpha'])
    for result_item in result_properties:
-      results[result_item]=False
+      results[result_item] = False
    results['keywords'] = []
    data_properties = {}
    rsa_moduli = []
    num_messages = len(data)
    for datum, index in zip(data, range(num_messages)):
       # analyze each ciphertext to determine various individual properties
-      data_properties[index]={}
+      data_properties[index] = {}
       data_properties[index]['is_openssl_formatted'] = (datum[:8] == "Salted__")
       data_properties[index]['base64_encoded'] = is_base64_encoded(datum)
       data_properties[index]['hex_encoded'] = is_hex_encoded(datum)
@@ -658,9 +652,11 @@ def analyze_ciphertext(data, verbose=False):
        data_properties[index]['rsa_n_length']) = check_rsa_key(datum)
 
       # check for silly/classical crypto here
-      data_properties[index]['is_transposition_only'] = (detect_plaintext(datum.lower(),frequency.frequency_tables['single_english_icase_letters']) < 1)
+      data_properties[index]['is_transposition_only'] = (
+                 detect_plaintext(datum.lower(), frequency.frequency_tables['single_english_icase_letters']) < 1)
       data_properties[index]['is_polybius'] = detect_polybius(datum)
-      data_properties[index]['is_all_alpha'] = all([chr(char) in ' qwertyuiopasdfghjklzxcvbnm' for char in datum.lower()])
+      data_properties[index]['is_all_alpha'] = all(
+         [chr(char) in ' qwertyuiopasdfghjklzxcvbnm' for char in datum.lower()])
    if all([data_properties[datum]['is_openssl_formatted'] for datum in data_properties]):
       if verbose:
          print('[+] Messages appear to be in OpenSSL format. Stripping OpenSSL header and analyzing again.')
@@ -673,12 +669,13 @@ def analyze_ciphertext(data, verbose=False):
       if verbose:
          print('[+] Messages appear to be zlib compressed, decompressing and analyzing again.')
       return analyze_ciphertext(list(map(zlib.decompress, data)), verbose=verbose)
-   if all([data_properties[datum]['base64_encoded'] and not data_properties[datum]['is_all_alpha'] for datum in data_properties]):
+   if all([data_properties[datum]['base64_encoded'] and not data_properties[datum]['is_all_alpha'] for datum in
+           data_properties]):
       if verbose:
          print('[+] Messages appear to be Base64 encoded, Base64 decoding and analyzing again.')
       return analyze_ciphertext([b64decode(x) for x in data], verbose=verbose)
    min_blocksize = min([data_properties[datum]['blocksize'] for datum in data_properties])
-   
+
    # perhaps we're dealing with hashes?
    if len(set([len(datum) for datum in data])) == 1:
       sample_length = list(set([len(datum) for datum in data]))[0]
@@ -696,14 +693,14 @@ def analyze_ciphertext(data, verbose=False):
             print('[+] Messages are all of length 20. This suggests RIPEMD-160 or SHA1 hashes.')
             print('[!] Consider attempting hash-length extension attacks.')
             print('[!] Consider attempting brute-force attacks.')
-      elif sample_length in [28,32,48,64]:
+      elif sample_length in [28, 32, 48, 64]:
          results['sha2_hashes'] = True
          results['keywords'].append('sha2_hashes')
          if verbose:
             print('[+] Messages all have equal length matching one possible output length of SHA-2 hashes.')
             print('[!] Consider attempting hash-length extension attacks.')
             print('[!] Consider attempting brute-force attacks.')
-   
+
    # Are we dealing with RSA keys?
    if all([data_properties[datum]['rsa_key'] for datum in data_properties]):
       if verbose:
@@ -717,22 +714,26 @@ def analyze_ciphertext(data, verbose=False):
       if any([0 < data_properties[datum]['rsa_n_length'] <= 512 for datum in data_properties]):
          results['keywords'].append('rsa_small_n')
          if verbose:
-            print('[!] At least one of the RSA keys discovered has a bit length <= 512. This key can reasonably be factored with a single off-the-shelf computer.')
+            print(
+               '[!] At least one of the RSA keys discovered has a bit length <= 512. This key can reasonably be factored with a single off-the-shelf computer.')
       # Any proven dangerously small primes?
       elif any([0 < data_properties[datum]['rsa_n_length'] < 768 for datum in data_properties]):
          results['keywords'].append('rsa_small_n')
          if verbose:
-            print('[!] At least one of the RSA keys discovered has a bit length <= 768. This key can be factored with a large number of computers such as a botnet, or large cluster.')
+            print(
+               '[!] At least one of the RSA keys discovered has a bit length <= 768. This key can be factored with a large number of computers such as a botnet, or large cluster.')
       # Any theoretical dangerously small primes?
       elif any([0 < data_properties[datum]['rsa_n_length'] < 1024 for datum in data_properties]):
          results['keywords'].append('rsa_small_n')
          if verbose:
-            print('[!] At least one of the RSA keys discovered has a bit length <= 1024. This key can be factored with a large number of computers such as a botnet, or large cluster.')
+            print(
+               '[!] At least one of the RSA keys discovered has a bit length <= 1024. This key can be factored with a large number of computers such as a botnet, or large cluster.')
       if len(set(rsa_moduli)) < len(rsa_moduli):
          results['keywords'].append('rsa_n_reuse')
          if verbose:
-            print('[!] Two or more of the keys have the same modulus. Anyone who holds the private component for one of these keys can derive the private component for any of the others.')
-            
+            print(
+               '[!] Two or more of the keys have the same modulus. Anyone who holds the private component for one of these keys can derive the private component for any of the others.')
+
    elif min_blocksize:
       results['keywords'].append('block')
       results['blocksize'] = min_blocksize
@@ -754,10 +755,11 @@ def analyze_ciphertext(data, verbose=False):
             results['cbc_fixed_iv'] = True
             results['keywords'].append('cbc_fixed_iv')
             if verbose:
-               print('[!] Duplicate blocks detected between messages. This indicates either ECB mode or CBC mode with a fixed IV.')
+               print(
+                  '[!] Duplicate blocks detected between messages. This indicates either ECB mode or CBC mode with a fixed IV.')
                print('[!] Consider attempting bytewise CBC-fixed-IV decryption.')
 
-            
+
    # we don't appear to be working with a block cipher, so maybe stream cipher or homebrew
    else:
       if verbose:
@@ -796,7 +798,8 @@ def analyze_ciphertext(data, verbose=False):
             print('[!] Consider running single-byte or multi-byte XOR solvers.')
 
    # checks for silly classical crypto
-   if all([data_properties[datum]['is_transposition_only'] for datum in data_properties]) and not 'rsa_key' in results['keywords']:
+   if all([data_properties[datum]['is_transposition_only'] for datum in data_properties]) and not 'rsa_key' in results[
+      'keywords']:
       results['is_transposition_only'] = True
       results['keywords'].append('transposition')
       if verbose:
@@ -818,7 +821,8 @@ def analyze_ciphertext(data, verbose=False):
    return results
 
 
-def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True, charset=frequency.optimized_charset['english']):
+def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True,
+                    charset=frequency.optimized_charset['english']):
    '''
    Bytewise ECB decryption.
    
@@ -830,39 +834,42 @@ def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True
    ``bool`` hollywood - Silly hollywood-style visualization
    ``bytes`` charset - A string of characters that could possibly be in the decrypted data, where the first character is the most common and the last is the least common. This should include at the very least all the possible padding characters. For instance, with PKCS#7 style padding, \\x01 through \\x10 should be included in the character set.
    '''
-   #------------------------------
+
+   # ------------------------------
    # Helper functions for ECB CPA bytewise decryption
    #
    def find_egg(ciphertext, block_size):
-      ciphertext_blocks = split_into_blocks(ciphertext,block_size)
+      ciphertext_blocks = split_into_blocks(ciphertext, block_size)
       num_blocks = len(ciphertext_blocks)
       if num_blocks < 4:
          return None
-      for offset in range(num_blocks-4):
-         if (ciphertext_blocks[offset] == ciphertext_blocks[offset+1]) and (ciphertext_blocks[offset+2] == ciphertext_blocks[offset+3]):
-            return ((offset * block_size) + (4*block_size))
+      for offset in range(num_blocks - 4):
+         if (ciphertext_blocks[offset] == ciphertext_blocks[offset + 1]) and (
+                 ciphertext_blocks[offset + 2] == ciphertext_blocks[offset + 3]):
+            return ((offset * block_size) + (4 * block_size))
       return None
-   
+
    def try_forever_egghunt_encryption_oracle(encryption_oracle, block_size, plaintext):
       while True:
          ciphertext = encryption_oracle(plaintext)
          egg_offset = find_egg(ciphertext, block_size)
          if egg_offset != None:
             return ciphertext[egg_offset:]
+
    #
-   #-------------------------------
-   
-   #-------------------------------
+   # -------------------------------
+
+   # -------------------------------
    # Variable setup
    #
    bytes_to_boundary = 0
    # helps us find where our plaintext lies in the ciphertext
-   egg = b'A'*(block_size*2)+b'B'*(block_size*2)
+   egg = b'A' * (block_size * 2) + b'B' * (block_size * 2)
    # encrypt data of different lengths until egg is found
    bytes_to_boundary = None
    for tries in range(20):
       for length in range(block_size):
-         if find_egg(encryption_oracle( (b'A'*length) + egg ), block_size) != None:
+         if find_egg(encryption_oracle((b'A' * length) + egg), block_size) != None:
             bytes_to_boundary = length
             break
       if bytes_to_boundary != None:
@@ -871,40 +878,44 @@ def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True
       # For whatever reason, we couldn't get a length after 20 tries
       return False
    # get to the byte boundary so we're aligned to boundaries
-   padding = b'A'*bytes_to_boundary
-   prev_plaintext_block = b'A'*block_size
-   ciphertext_to_decrypt = try_forever_egghunt_encryption_oracle(encryption_oracle,block_size,padding+egg)
+   padding = b'A' * bytes_to_boundary
+   prev_plaintext_block = b'A' * block_size
+   ciphertext_to_decrypt = try_forever_egghunt_encryption_oracle(encryption_oracle, block_size, padding + egg)
    plaintext = b''
    decryption_complete = False
-   
+
    if verbose:
-      num_blocks = len(ciphertext_to_decrypt)/block_size
+      num_blocks = len(ciphertext_to_decrypt) / block_size
       num_current_block = 0
    #
-   #-------------------
-   
+   # -------------------
+
    # iterate through each block of ciphertext to decrypt
-   for offset in range(0,len(ciphertext_to_decrypt),block_size):
+   for offset in range(0, len(ciphertext_to_decrypt), block_size):
       if verbose:
          num_current_block += 1
-         print("[+] Decrypting block %d of %d" % (num_current_block,num_blocks))
+         print("[+] Decrypting block %d of %d" % (num_current_block, num_blocks))
       decrypted_bytes = b''
       # iterate through each byte of each ciphertext block
-      for current_byte in range(1,block_size+1):
+      for current_byte in range(1, block_size + 1):
          working_block = prev_plaintext_block[current_byte:]
          # Use the oracle to determine what our working block should look like
          # when we have the correct byte
-         correct_byte_block = try_forever_egghunt_encryption_oracle(encryption_oracle,block_size,padding+egg+working_block)[offset:offset+block_size]
+         correct_byte_block = try_forever_egghunt_encryption_oracle(encryption_oracle, block_size,
+                                                                    padding + egg + working_block)[
+                              offset:offset + block_size]
          working_block += decrypted_bytes
          # Try each byte until we match the block indicating the correct byte
          for char in charset:
-            if verbose and hollywood: 
+            if verbose and hollywood:
                # Silly hollywood style visualization of decryption process
                current_progress = str(output_mask(decrypted_bytes, string.printable))
-               chaff = str(output_mask(bytes([char])*(block_size-current_byte), hollywood_mask))
+               chaff = str(output_mask(bytes([char]) * (block_size - current_byte), hollywood_mask))
                sys.stdout.write(f"\r {current_progress[:-5]}{chaff[:-5]}")
                sys.stdout.flush()
-            if try_forever_egghunt_encryption_oracle(encryption_oracle,block_size,padding+egg+working_block+bytes([char]))[:block_size] == correct_byte_block:
+            if try_forever_egghunt_encryption_oracle(encryption_oracle, block_size,
+                                                     padding + egg + working_block + bytes([char]))[
+               :block_size] == correct_byte_block:
                decrypted_bytes += bytes([char])
                break
             if bytes([char]) == charset[-1]:
@@ -918,11 +929,15 @@ def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True
          print("\n[+] Decrypted block: %s" % decrypted_bytes)
    return plaintext
 
+
 '''
 TODO: Extend the attack to other forms of padding that
 can be used with Vaudenay's technique
 '''
-def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type='pkcs7', iv=None, prefix=b'',verbose=False, hollywood=True, charset=frequency.optimized_charset['english']):
+
+
+def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type='pkcs7', iv=None, prefix=b'',
+                           verbose=False, hollywood=True, charset=frequency.optimized_charset['english']):
    '''
    Given a padding oracle function that accepts raw ciphertext and returns
    True for good padding or False for bad padding, and a ciphertext to decrypt:
@@ -941,8 +956,8 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
    ``bytes`` charset - A string of characters that could possibly be in the decrypted data, where the first character is the most common and the last is the least common. This should include at the very least all the possible padding characters. For instance, with PKCS#7 style padding, \\x01 through \\x10 should be included in the character set.
    '''
    plaintext = intermediate_block = b''
-   ciphertext_blocks = split_into_blocks(ciphertext,block_size)
-   #--------------
+   ciphertext_blocks = split_into_blocks(ciphertext, block_size)
+   # --------------
    # Check our parameters to make sure everything has been put in correctly
    #
    if len(prefix) % block_size != 0:
@@ -961,11 +976,12 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
       # If we haven't received an IV, try a block of nulls as this is commonly
       # used as an IV in practice.
       if verbose:
-         print('[*] No IV was provided, using a block of null bytes instead. Unless a block of null bytes is being used as the IV, expect the first block to be garbled.')
-      prev_block = b"\x00"*block_size
+         print(
+            '[*] No IV was provided, using a block of null bytes instead. Unless a block of null bytes is being used as the IV, expect the first block to be garbled.')
+      prev_block = b"\x00" * block_size
    #
-   #--------------
-   
+   # --------------
+
    num_blocks = len(ciphertext_blocks)
    num_current_block = 1
    if verbose:
@@ -973,7 +989,7 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
    # iterate through each block of ciphertext
    for block_to_decrypt in ciphertext_blocks:
       if verbose:
-         sys.stdout.write("\rDecrypting block %d of %d" % (num_current_block,num_blocks))
+         sys.stdout.write("\rDecrypting block %d of %d" % (num_current_block, num_blocks))
          sys.stdout.flush()
          if hollywood:
             print("")
@@ -983,24 +999,26 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
       flip_index = len(temp_ciphertext) - block_size
       intermediate_block = b''
       # iterate through each byte of each block, and simultaneously, pkcs7 padding bytes
-      for current_padding_byte in range(1,block_size+1):
+      for current_padding_byte in range(1, block_size + 1):
          original_byte = prev_block[-current_padding_byte]
          if current_padding_byte != 1:
-            temp_ciphertext[flip_index-(current_padding_byte-1):flip_index] = sxor(intermediate_block,bytes([current_padding_byte]) * (current_padding_byte-1))
+            temp_ciphertext[flip_index - (current_padding_byte - 1):flip_index] = sxor(intermediate_block,
+                                                                                       bytes([current_padding_byte]) * (
+                                                                                                  current_padding_byte - 1))
          for char in charset:
             if verbose and hollywood:
                # Silly hollywood style visualization of decryption process
-               current_block = sxor(intermediate_block,prev_block[:-(current_padding_byte-1)])
-               chaff = bytes([char])*(block_size-current_padding_byte)
-               sys.stdout.write("\r" + str(output_mask(chaff,hollywood_mask)))
+               current_block = sxor(intermediate_block, prev_block[:-(current_padding_byte - 1)])
+               chaff = bytes([char]) * (block_size - current_padding_byte)
+               sys.stdout.write("\r" + str(output_mask(chaff, hollywood_mask)))
                sys.stdout.flush()
             new_byte = char ^ current_padding_byte ^ original_byte
-            temp_ciphertext[flip_index-current_padding_byte] = new_byte
+            temp_ciphertext[flip_index - current_padding_byte] = new_byte
             if padding_oracle(bytes(temp_ciphertext)) == True:
                # Either we have a padding of "\x01" or some other valid padding.
                # If we're flipping the last byte, flip the second to last byte just to be sure.
                if current_padding_byte == 1:
-                  temp_ciphertext[flip_index-2] = temp_ciphertext[flip_index-2]^1
+                  temp_ciphertext[flip_index - 2] = temp_ciphertext[flip_index - 2] ^ 1
                   if padding_oracle(bytes(temp_ciphertext)) == True:
                      # Current last decrypted byte is 0x01
                      intermediate_byte = 0x01 ^ new_byte
@@ -1015,11 +1033,11 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
          intermediate_block = bytes([intermediate_byte]) + intermediate_block
       if verbose:
          print(f"\r[+] Decrypted block: {sxor(prev_block,intermediate_block)}")
-      plaintext += sxor(prev_block,intermediate_block)
+      plaintext += sxor(prev_block, intermediate_block)
       prev_block = block_to_decrypt
-   
+
    return plaintext
-   
+
 
 def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=False):
    '''
@@ -1042,38 +1060,42 @@ def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=Fal
    ``bytes`` The encrypted version of ``new_plaintext``
    '''
    new_plaintext = pkcs7_pad(new_plaintext, block_size)
+
    def __padding_decryption_oracle(ciphertext):
-      return padding_oracle_decrypt(oracle, ciphertext, block_size, iv=b"\x00"*block_size)
+      return padding_oracle_decrypt(oracle, ciphertext, block_size, iv=b"\x00" * block_size)
+
    if is_padding_oracle:
       decrypt = __padding_decryption_oracle
    else:
       decrypt = oracle
    padding_block = b''
-   null_block = new_ciphertext = utility_block = b"\x00"*block_size
+   null_block = new_ciphertext = utility_block = b"\x00" * block_size
    # If we have a decryption oracle, we need to prevent padding errors with a valid padding block.
    if is_padding_oracle == False:
-      most_of_junk_block = b"\x00"*(block_size-1)
-      for char in [x.to_bytes(1,'big') for x in range(256)]:
+      most_of_junk_block = b"\x00" * (block_size - 1)
+      for char in [x.to_bytes(1, 'big') for x in range(256)]:
          junk_block = most_of_junk_block + char
          if decrypt(junk_block + null_block) != False:
             padding_block = junk_block + null_block
             break
 
-   plaintext_blocks = split_into_blocks(new_plaintext,block_size)[::-1]
+   plaintext_blocks = split_into_blocks(new_plaintext, block_size)[::-1]
    if verbose:
       print("[+] Got a valid padding block, continuing with CBC-R.")
-      num_blocks = len(plaintext_blocks) 
+      num_blocks = len(plaintext_blocks)
       count = 0
    for plaintext_block in plaintext_blocks:
       if verbose:
          count += 1
          sys.stdout.write('\rEncrypting block %d of %d' % (count, num_blocks))
-      intermediate_block = decrypt(null_block + utility_block + padding_block)[block_size:block_size*2]
-      utility_block = sxor(intermediate_block,plaintext_block)
+      intermediate_block = decrypt(null_block + utility_block + padding_block)[block_size:block_size * 2]
+      utility_block = sxor(intermediate_block, plaintext_block)
       new_ciphertext = utility_block + new_ciphertext
    return new_ciphertext
 
-def break_single_byte_xor(ciphertext,num_answers=20,pt_freq_table=frequency.frequency_tables['english'], detect_words=True, charset=None, verbose=False):
+
+def break_single_byte_xor(ciphertext, num_answers=20, pt_freq_table=frequency.frequency_tables['english'],
+                          detect_words=True):
    '''
    Return a list of likely successful single byte XOR decryptions sorted by score
 
@@ -1098,15 +1120,18 @@ def break_single_byte_xor(ciphertext,num_answers=20,pt_freq_table=frequency.freq
    potential_keys = range(256)
 
    for key in potential_keys:
-      answer = sxor(ciphertext, bytes([key])*ciphertext_len)
-      answers[answer] = (detect_plaintext(answer,pt_freq_table=pt_freq_table,detect_words=detect_words),key)
+      answer = sxor(ciphertext, bytes([key]) * ciphertext_len)
+      answers[answer] = (detect_plaintext(answer, pt_freq_table=pt_freq_table, detect_words=detect_words), key)
    # Return the best resulting plaintexts and associated score sorted by score
    return sorted(list(answers.items()), key=lambda x: x[1])[:num_answers]
 
-def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_table=frequency.frequency_tables['english'], verbose=False, min_keysize=2):
+
+def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_table=frequency.frequency_tables['english'],
+                         verbose=False, min_keysize=2):
    '''
    Return a list of likely successful multi-byte XOR decryptions sorted by score
-   
+
+   Inputs:
    ``bytes`` ciphertext - Ciphertext to attack
    ``int`` max_keysize - Largest keysize to try
    ``int`` min_keysize - Smallest keysize to try
@@ -1114,19 +1139,22 @@ def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_tabl
    ``dict`` pt_freq_table - A frequency table for the expected plaintext, as generated
       by ``generate_frequency_table()``
    ``bool`` verbose - Show progress in the attack
+
+   Returns:
+   ``[bytes, ...]``
    '''
-   pt_freq_table_single_chars = dict([x for x in list(pt_freq_table.items()) if len(x[0])==1])
+   pt_freq_table_single_chars = dict([x for x in list(pt_freq_table.items()) if len(x[0]) == 1])
    edit_distances = {}
    ciphertext_len = len(ciphertext)
-   for keysize in range(min_keysize,max_keysize+1):
+   for keysize in range(min_keysize, max_keysize + 1):
       ciphertext_chunks = split_into_blocks(ciphertext, keysize)
       if len(ciphertext_chunks) < 3:
          break
-      edit_distances[keysize] = hamming_distance(ciphertext_chunks[0],ciphertext_chunks[1])
-      edit_distances[keysize] += hamming_distance(ciphertext_chunks[1],ciphertext_chunks[2])
-      edit_distances[keysize] += hamming_distance(ciphertext_chunks[0],ciphertext_chunks[2])
-      edit_distances[keysize] /= (keysize*3.0)
-   best_keysizes = sorted(list(edit_distances.items()),key=operator.itemgetter(1))[0:num_answers]
+      edit_distances[keysize] = hamming_distance(ciphertext_chunks[0], ciphertext_chunks[1])
+      edit_distances[keysize] += hamming_distance(ciphertext_chunks[1], ciphertext_chunks[2])
+      edit_distances[keysize] += hamming_distance(ciphertext_chunks[0], ciphertext_chunks[2])
+      edit_distances[keysize] /= (keysize * 3.0)
+   best_keysizes = sorted(list(edit_distances.items()), key=operator.itemgetter(1))[0:num_answers]
    best_keysizes = [keysize[0] for keysize in best_keysizes]
    answers = {}
    if verbose:
@@ -1140,21 +1168,22 @@ def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_tabl
       chunk_count = 1
       for offset in range(best_keysize):
          ct_chunks.append(ciphertext[offset::best_keysize])
-      best_key=b''
+      best_key = b''
       for ct_chunk in ct_chunks:
          if verbose:
             sys.stdout.write("\rProcessing chunk %d of %d" % (current_chunk, chunks_to_process))
             sys.stdout.flush()
             current_chunk += 1
-         best_key += bytes([break_single_byte_xor(ct_chunk,pt_freq_table=pt_freq_table_single_chars, detect_words=False)[0][1][1]])
-      answers[best_key] = sxor(ciphertext,best_key*((len(ciphertext)//best_keysize)+1))
+         best_key += bytes(
+            [break_single_byte_xor(ct_chunk, pt_freq_table=pt_freq_table_single_chars, detect_words=False)[0][1][1]])
+      answers[best_key] = sxor(ciphertext, best_key * ((len(ciphertext) // best_keysize) + 1))
       if verbose:
          print('')
-   return sorted(list(answers.values()),key=lambda x: detect_plaintext(x, pt_freq_table=pt_freq_table))[:num_answers]
+   return sorted(list(answers.values()), key=lambda x: detect_plaintext(x, pt_freq_table=pt_freq_table))[:num_answers]
 
 
-
-def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['single_english'], accuracy=50, verbose=False):
+def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['single_english'], accuracy=50,
+                        verbose=False):
    '''
    Takes a list of ciphertexts XOR'ed with the same unknown set of bytes
    and breaks them by applying single byte xor analysis technique to
@@ -1176,6 +1205,7 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
    ``int`` accuracy - A number from 1-100 to balance between speed and accuracy
    ``bool`` verbose - Whether or not to show progress
    '''
+
    def right_pad_with_none(array, length):
       array_tmp = []
       for item in array:
@@ -1184,15 +1214,14 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
          array_tmp.append(item_list)
       return array_tmp
 
-
    # Can't do this with <2 samples
    if len(ciphertexts) < 2:
       if verbose:
          print('[!] This attack requires two or more samples.')
       return False
-   
+
    # Check accuracy and convert to 1-256
-   accuracy = int(accuracy * 2.56) # 2.56 = 256 * 0.01, result is same as converting to % of 256
+   accuracy = int(accuracy * 2.56)  # 2.56 = 256 * 0.01, result is same as converting to % of 256
 
    # Need to truncate the longest ciphertext to the length of the second longest
    longest_ct_len = max([len(x) for x in ciphertexts])
@@ -1218,7 +1247,8 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
          sys.stdout.flush()
       # Remove padding for single byte XOR solve
       joined_zipped_ciphertext = b''.join([bytes([x]) for x in zipped_ciphertext if x != None])
-      result = break_single_byte_xor(joined_zipped_ciphertext, num_answers=accuracy, pt_freq_table=pt_freq_table, detect_words=False)[0][0]
+      result = break_single_byte_xor(joined_zipped_ciphertext, num_answers=accuracy, pt_freq_table=pt_freq_table,
+                                     detect_words=False)[0][0]
       result_tmp = list(result)
       result = []
       # Add it back for rearranging
@@ -1233,9 +1263,8 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
    final_result = []
    for plaintext in zip(*zipped_plaintexts):
       final_result.append(b''.join([bytes([char]) for char in plaintext if char != None]))
-            
-   return final_result
 
+   return final_result
 
 
 def detect_hash_format(words, hashes):
@@ -1255,39 +1284,39 @@ def detect_hash_format(words, hashes):
       print('This will take a very long time. Are you sure? (y/n)')
       if sys.stdin.read(1).lower() != 'y':
          return False
-   
+
    if all([is_hex_encoded(each_hash) for each_hash in hashes]):
       hashes = [unhexlify(x) for x in hashes]
-   
+
    for inhash in hashes:
       hash_len = len(inhash)
-      for num in range(1,num_words+1):
-         for delimiter in [b'',b':',b';',b'|',b',',b'-',b' ']:
-            for candidate in [delimiter.join(permutation) for permutation in itertools.permutations(words,num)]:
+      for num in range(1, num_words + 1):
+         for delimiter in [b'', b':', b';', b'|', b',', b'-', b' ']:
+            for candidate in [delimiter.join(permutation) for permutation in itertools.permutations(words, num)]:
                if hash_len == 16:
                   if MD5.new(candidate).digest() == inhash:
-                     return (candidate,'md5')
+                     return (candidate, 'md5')
                   if MD4.new(candidate).digest() == inhash:
-                     return (candidate,'md4')
+                     return (candidate, 'md4')
                   if MD2.new(candidate).digest() == inhash:
-                     return (candidate,'md2')
+                     return (candidate, 'md2')
                elif hash_len == 20:
                   if RIPEMD.new(candidate).digest() == inhash:
-                     return (candidate,'ripemd-160')
+                     return (candidate, 'ripemd-160')
                   if SHA1.new(candidate).digest() == inhash:
-                     return (candidate,'sha-1')
+                     return (candidate, 'sha-1')
                elif hash_len == 28:
                   if SHA224.new(candidate).digest() == inhash:
-                     return (candidate,'sha-224')
+                     return (candidate, 'sha-224')
                elif hash_len == 32:
                   if SHA256.new(candidate).digest() == inhash:
-                     return (candidate,'sha-256')
+                     return (candidate, 'sha-256')
                elif hash_len == 48:
                   if SHA384.new(candidate).digest() == inhash:
-                     return (candidate,'sha-384')
+                     return (candidate, 'sha-384')
                elif hash_len == 64:
                   if SHA512.new(candidate).digest() == inhash:
-                     return (candidate,'sha-512')
+                     return (candidate, 'sha-512')
    # nothing matches
    return False
 
@@ -1307,13 +1336,13 @@ def hastad_broadcast_attack(key_message_pairs, exponent):
    <christoph@christoph-egger.org>
    https://www.christoph-egger.org/weblog/entry/46)
    """
-   x,n = chinese_remainder_theorem(key_message_pairs)
-   realnum = int(nroot(x,exponent))
+   x, n = chinese_remainder_theorem(key_message_pairs)
+   realnum = int(nroot(x, exponent))
 
    return realnum
 
 
-def dsa_repeated_nonce_attack(r,msg1,s1,msg2,s2,n,verbose=False):
+def dsa_repeated_nonce_attack(r, msg1, s1, msg2, s2, n, verbose=False):
    '''
    Recover k (nonce) and Da (private signing key) from two DSA or ECDSA signed messages
    with identical k values
@@ -1335,21 +1364,21 @@ def dsa_repeated_nonce_attack(r,msg1,s1,msg2,s2,n,verbose=False):
    # convert messages to sha1 hash as number
    z1 = int.from_bytes(SHA1.new(msg1).digest(), 'big')
    z2 = int.from_bytes(SHA1.new(msg2).digest(), 'big')
-   
-   sdiff_inv = number.inverse(((s1-s2)%n),n)
-   k = ( ((z1-z2)%n) * sdiff_inv) % n
-   
-   r_inv = number.inverse(r,n)
-   da = (((((s1*k) %n) -z1) %n) * r_inv) % n
-   
+
+   sdiff_inv = number.inverse(((s1 - s2) % n), n)
+   k = (((z1 - z2) % n) * sdiff_inv) % n
+
+   r_inv = number.inverse(r, n)
+   da = (((((s1 * k) % n) - z1) % n) * r_inv) % n
+
    if verbose:
       print("Recovered k:" + hex(k))
       print("Recovered Da: " + hex(da))
-   
+
    return (k, da)
 
 
-def retrieve_iv(decryption_oracle,ciphertext,blocksize):
+def retrieve_iv(decryption_oracle, ciphertext, blocksize):
    '''
    Retrieve the IV used in a given CBC decryption by decrypting
    [\\x00*(blocksize*2)][ciphertext] and XORing the first two
@@ -1364,9 +1393,8 @@ def retrieve_iv(decryption_oracle,ciphertext,blocksize):
    
    Returns the IV.
    '''
-   if len(ciphertext) < 2*blocksize:
-      return False # ciphertext must be at least two blocks long
-   test_payload = (b"\x00"*(blocksize*2))+ciphertext
+   if len(ciphertext) < 2 * blocksize:
+      return False  # ciphertext must be at least two blocks long
+   test_payload = (b"\x00" * (blocksize * 2)) + ciphertext
    test_result = decryption_oracle(test_payload)
-   return sxor(test_result[:blocksize],test_result[blocksize:blocksize*2])
-
+   return sxor(test_result[:blocksize], test_result[blocksize:blocksize * 2])

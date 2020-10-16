@@ -1,9 +1,10 @@
-'''
+"""
 Cryptanalib - A series of useful functions for cryptanalysis
 by Daniel "unicornFurnace" Crowley
 
 dependencies - PyCryptodome
-'''
+"""
+# noinspection PyPackageRequirements
 from Crypto.Util import number
 from Crypto.Util import strxor
 from Crypto.Util import Padding
@@ -810,7 +811,7 @@ def make_polybius_square(password,extended=False):
       will be six bytes long.
    '''
    alphabet = lowercase_letters
-   if extended == True:
+   if extended:
       alphabet += digits
    else:
       alphabet = bytes.replace(b''.join(lowercase_letters), b'j', b'')
@@ -879,7 +880,7 @@ def detect_ecb(ciphertext):
                return (True, blocksize, block)
             else:
                seen.add(block)
-   return (False, 0, b'')
+   return False, 0, b''
 
 
 def pkcs7_padding_remove(text, blocksize):
