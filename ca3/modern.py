@@ -662,7 +662,7 @@ def cbc_edit(old_plaintext, new_plaintext, old_ciphertext):
    return sxor(old_ciphertext, edits)
 
 
-def analyze_ciphertext(data, verbose=False):
+def analyze_ciphertext(data, verbose=False, freq_table=frequency.frequency_tables['english']):
    """
    Takes in a list of samples and analyzes them to determine what type
    of samples they may be.
@@ -710,6 +710,7 @@ def analyze_ciphertext(data, verbose=False):
    }
    """
    data = [x for x in data if x != None and x != '']
+   freq_table_only_lowercase = dict([x for x in freq_table.items() if x[0].islower()])
    results = {}
    result_properties = ['ecb', 'cbc_fixed_iv', 'blocksize', 'md_hashes',
                         'sha1_hashes', 'sha2_hashes', 'individually_random', 'collectively_random',
@@ -738,10 +739,12 @@ def analyze_ciphertext(data, verbose=False):
 
       # check for silly/classical crypto here
       data_properties[index]['is_transposition_only'] = (
-                 detect_plaintext(datum.lower(), frequency.frequency_tables['single_english_icase_letters']) < 1)
+                 detect_plaintext(datum.lower(), freq_table_only_lowercase, detect_words=False) < 1
+      )
       data_properties[index]['is_polybius'] = detect_polybius(datum)
       data_properties[index]['is_all_alpha'] = all(
-         [chr(char) in ' qwertyuiopasdfghjklzxcvbnm' for char in datum.lower()])
+         [chr(char) in ' qwertyuiopasdfghjklzxcvbnm' for char in datum.lower()]
+      )
    if all([data_properties[datum]['is_openssl_formatted'] for datum in data_properties]):
       if verbose:
          print('[+] Messages appear to be in OpenSSL format. Stripping OpenSSL header and analyzing again.')
@@ -1251,7 +1254,6 @@ def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_tabl
    '''
    pt_freq_table_single_chars = dict([x for x in list(pt_freq_table.items()) if len(x[0]) == 1])
    edit_distances = {}
-   ciphertext_len = len(ciphertext)
    for keysize in range(min_keysize, max_keysize + 1):
       ciphertext_chunks = split_into_blocks(ciphertext, keysize)
       if len(ciphertext_chunks) < 3:
@@ -1270,8 +1272,6 @@ def break_multi_byte_xor(ciphertext, max_keysize=40, num_answers=5, pt_freq_tabl
       if verbose:
          print("Trying keysize %d" % best_keysize)
       ct_chunks = []
-      pt_chunks = []
-      chunk_count = 1
       for offset in range(best_keysize):
          ct_chunks.append(ciphertext[offset::best_keysize])
       best_key = b''
