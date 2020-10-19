@@ -13,7 +13,7 @@ from decimal import *
 
 import string
 
-hollywood_mask = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
+hollywood_mask = b'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
 from . import frequency
 import operator
 import itertools
@@ -1008,8 +1008,8 @@ def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True
          for char in charset:
             if verbose and hollywood:
                # Silly hollywood style visualization of decryption process
-               current_progress = str(output_mask(decrypted_bytes, string.printable))
-               chaff = str(output_mask(bytes([char]) * (block_size - current_byte), hollywood_mask))
+               current_progress = bytes2str(output_mask(decrypted_bytes, hollywood_mask))
+               chaff = bytes2str(output_mask(bytes([char]) * (block_size - current_byte), hollywood_mask))
                sys.stdout.write(f"\r {current_progress}{chaff}")
                sys.stdout.flush()
             if try_forever_egghunt_encryption_oracle(encryption_oracle, block_size,
@@ -1119,7 +1119,7 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
                # Silly hollywood style visualization of decryption process
                current_block = sxor(intermediate_block, prev_block[:-(current_padding_byte - 1)])
                chaff = bytes([char]) * (block_size - current_padding_byte)
-               sys.stdout.write("\r" + str(output_mask(current_block + chaff, hollywood_mask)))
+               sys.stdout.write("\r" + bytes2str(output_mask(current_block + chaff, hollywood_mask)))
                sys.stdout.flush()
             new_byte = char ^ current_padding_byte ^ original_byte
             temp_ciphertext[flip_index - current_padding_byte] = new_byte
