@@ -5,8 +5,7 @@ by Daniel "unicornFurnace" Crowley
 dependencies - PyCryptodome
 """
 # Get helper functions
-from .helpers import *
-
+from . import helpers
 from . import frequency
 import operator
 from math import sqrt
@@ -102,7 +101,7 @@ def morse_encode(text, dot=b'.', dash=b'-', space=b' '):
    translated_morse_table = dict(translated_morse_table)
    output = []
    for char in text.lower():
-      if bytes([char]) in lowercase_letters + digits:
+      if bytes([char]) in helpers.lowercase_letters + helpers.digits:
          output.append(translated_morse_table[bytes([char])])
    return space.join(output)
 
@@ -127,7 +126,7 @@ def break_generic_shift(ciphertext, charset, num_answers=1, freq_table=frequency
    '''
 
    def score_plaintext(sample):
-      return detect_plaintext(sample, pt_freq_table=freq_table)
+      return helpers.detect_plaintext(sample, pt_freq_table=freq_table)
 
    answers = []
    charset_len = len(charset)
@@ -161,7 +160,7 @@ def break_alpha_shift(ciphertext, num_answers=1, freq_table=frequency.frequency_
    ``[bytes, ...]`` The num_answers best answers, as scored by plaintext detection. If ``return_keys``
       is ``True``, return ``[(bytes, int), ...]`` instead.
    '''
-   return break_generic_shift(ciphertext.lower(), lowercase_letters, num_answers=num_answers, freq_table=freq_table,
+   return break_generic_shift(ciphertext.lower(), helpers.lowercase_letters, num_answers=num_answers, freq_table=freq_table,
                               return_keys=return_keys)
 
 
@@ -200,7 +199,7 @@ def break_columnar_transposition(ciphertext, pt_freq_table=frequency.frequency_t
    ciphertext_len = len(ciphertext)
    for num_cols in range(2, int(ciphertext_len / 2)):  # int works as floor() here
       result = b''.join([ciphertext[num::num_cols] for num in range(num_cols)])
-      results[result] = detect_plaintext(result, pt_freq_table=pt_freq_table, detect_words=True)
+      results[result] = helpers.detect_plaintext(result, pt_freq_table=pt_freq_table, detect_words=True)
    return sorted(list(results.items()), key=operator.itemgetter(1))[:num_answers]
 
 
@@ -292,15 +291,15 @@ def translate_vigenere(text, key, decrypt):
    key = key.upper()
    for c in text:
       try:
-         number = uppercase_letters.index(bytes([c]).upper())
+         number = helpers.uppercase_letters.index(bytes([c]).upper())
       except ValueError:
          # Character not alphabetic -> skip encryption/decryption
          result.append(bytes([c]))
          continue
       current_shift = to_number(key[key_index])
 
-      new_number = (number + (-current_shift if decrypt else current_shift)) % len(uppercase_letters)
-      result.append(lowercase_letters[new_number] if bytes([c]).islower() else uppercase_letters[new_number])
+      new_number = (number + (-current_shift if decrypt else current_shift)) % len(helpers.uppercase_letters)
+      result.append(helpers.lowercase_letters[new_number] if bytes([c]).islower() else helpers.uppercase_letters[new_number])
       key_index = (key_index + 1) % len(key)
 
    return b"".join(result)
@@ -443,7 +442,7 @@ def break_vigenere(ciphertext, scan_range, num_answers=1, max_best_shifts=2,
 
    # Blockwise frequency analysis:
    # Preparation for fast break_shift function: sort out single char probabilities
-   ref_letter_freq = [letter_frequency[k] for k in list(lowercase_letters)]
+   ref_letter_freq = [letter_frequency[k] for k in list(helpers.lowercase_letters)]
    keys = {}
 
    #  Quick pre-sorting of the keys by single letter frequency analysis
@@ -476,7 +475,7 @@ def break_vigenere(ciphertext, scan_range, num_answers=1, max_best_shifts=2,
          else:
             # Perform an encryption with this possible key and score its plaintext with single letter frequency
             plaintext = translate_vigenere(ciphertext, current_key, decrypt=True)
-            keys[current_key] = detect_plaintext(plaintext.lower(), detect_words=False)
+            keys[current_key] = helpers.detect_plaintext(plaintext.lower(), detect_words=False)
 
          if _count_up(digit_shift_index, digits_shifts) is None:
             break
@@ -487,7 +486,7 @@ def break_vigenere(ciphertext, scan_range, num_answers=1, max_best_shifts=2,
    keys2 = []
    for (current_key, score) in keys_sorted_by_single_letter_score[:num_key_guesses]:
       plaintext = translate_vigenere(ciphertext, current_key, decrypt=True)
-      keys2.append((current_key, detect_plaintext(plaintext.lower(), detect_words=(coefficient_word_count != 0.0),
+      keys2.append((current_key, helpers.detect_plaintext(plaintext.lower(), detect_words=(coefficient_word_count != 0.0),
                                                   individual_scores=True)))
 
    # weighting the different detect_plaintext analysis and sort the list

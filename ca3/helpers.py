@@ -10,7 +10,7 @@ from Crypto.Util import strxor
 from Crypto.Util import Padding
 from Crypto.PublicKey import RSA
 
-from decimal import *
+import decimal
 
 from . import frequency
 import zlib
@@ -67,8 +67,8 @@ def nroot(x, n):
    if n <= 0:
       raise ValueError("can't do negative or zero root")
 
-   getcontext().prec = max(30,len(str(x)))
-   approx_root = Decimal(x) ** (Decimal(1) / Decimal(n))
+   decimal.getcontext().prec = max(30,len(str(x)))
+   approx_root = decimal.Decimal(x) ** (decimal.Decimal(1) / decimal.Decimal(n))
    if pow(floor(approx_root),n) == x:
       return floor(approx_root)
    else:
@@ -160,7 +160,7 @@ def check_rsa_key(sample):
    n_bit_length - an int representing the bit length of the modulus found
       in the analyzed key, or False if the sample is not an RSA key
    """
-   is_rsa_key = has_private_component = n_bit_length = False
+   has_private_component = n_bit_length = False
 
    try:
       rsakey = RSA.importKey(sample.strip())
@@ -559,7 +559,7 @@ def detect_plaintext(candidate_text, pt_freq_table=frequency.frequency_tables['e
    ``bool`` detect_words - Use a list of strings expected in the correct plaintext,
       aka ``cribs``.
       This can be used in a number of ways. For instance, when attempting to decrypt
-      firmware, ``\x00\x00\x00\x00\x00`` may be a useful crib. When attempting to
+      firmware, ``\\x00\\x00\\x00\\x00\\x00`` may be a useful crib. When attempting to
       decrypt a PNG file, ``IHDR``, ``IDAT``, and ``IEND`` are useful cribs.
    ``[bytes, ...]`` common_words - Words that are likely to appear in the plaintext.
       Requires ``detect_words=True``.
