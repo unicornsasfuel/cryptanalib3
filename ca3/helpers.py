@@ -11,6 +11,7 @@ from Crypto.Util import Padding
 from Crypto.PublicKey import RSA
 
 import decimal
+import math
 
 from . import frequency
 import zlib
@@ -28,6 +29,34 @@ digits = [b'1', b'2', b'3', b'4', b'5', b'6', b'6', b'7', b'8', b'9', b'0']
 # This section contains various functions that are not terribly
 # useful on their own, but allow other functionality to work
 #------------------------------------
+
+def birthday_calc(possibilities, samples=None, likelihood=None):
+   """
+   Given the number of possible values in a system, and a likelihood, generate the
+   approximate number of randomly generated samples needed to achieve a single collision on average
+   with the likelihood provided.
+
+   This can be useful for determining the maximum number of messages that can be sent before key rotation should occur, given an acceptable likelihood of collision (e.g. for 128-bit IVs, with a 10% acceptable collision rate, a maximum of 8467859900595397632 messages should be sent before key rotation.)
+
+   Inputs:
+   ``int`` possibilities - the number of distinct possible values in the system (e.g. for a 128 bit IV, 2**128)
+   ``int`` samples - the number of samples that could possibly collide
+   ``float`` likelihood - the probability that exactly two samples have the same value (i.e. one collision)
+  
+   Returns:
+   If ``samples`` is ``None``, return the number of samples needed to reach the provided ``likelihood`` of a collision as an ``int``, given the provided ``possibilities``.
+   If ``likelihood`` is ``None``, return the likelihood of a collision given the number of samples and ``possibilities``.
+
+   Raises:
+   ``InputError`` if both ``samples`` and ``likelihood`` are ``None``.
+   """
+   if samples == None:
+      if likelihood == None:
+         raise InputError("Please provide either a number of samples or likelihood of collision.")
+      return int(math.sqrt(2*possibilities*math.log(1/(1-likelihood))))
+   else:
+      return 1-(math.e ** (-(samples**2)/(2*possibilities)))
+
 
 def bytes2str(inbytes):
    '''
