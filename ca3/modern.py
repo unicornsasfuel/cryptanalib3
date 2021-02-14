@@ -2,18 +2,18 @@
 Cryptanalib - A series of useful functions for cryptanalysis
 by Daniel "unicornFurnace" Crowley
 
-dependencies - PyCryptodome
+dependencies - PyCryptodome, numpy
 """
 import operator
 import itertools
 import sys
 import zlib
-import numpy as np
 from functools import reduce
 import decimal
 from binascii import unhexlify
 from base64 import b64decode
 
+import numpy as np
 from Crypto.Util import number as Cnumber
 
 # This is ugly as sin, but it cleans up the namespace
