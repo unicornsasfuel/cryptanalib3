@@ -5,11 +5,13 @@ by Daniel "unicornFurnace" Crowley
 dependencies - PyCryptodome
 """
 
-__all__ = ['helpers', 'modern', 'classical']
+__all__ = ['helpers', 'modern', 'classical', 'hash_length_extension', 'hashes']
 
 from .helpers import *
 from .modern import *
 from .classical import *
+from .hash_length_extension import *
+from .hashes import *
 import pydoc
 import re
 
