@@ -13,7 +13,8 @@ setup(name='cryptanalib3',
       long_description_content_type='text/markdown',
       packages=find_packages(exclude=['examples','tests']),
       install_requires=[
-          'pycryptodome'
+          'pycryptodome',
+          'numpy'
       ],
       python_requires='>=3.6',
       classifiers=[
