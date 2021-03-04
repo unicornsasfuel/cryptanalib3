@@ -1,4 +1,4 @@
-# cryptanalib3
+# cryptanalib3 ![build status](https://travis-ci.com/unicornsasfuel/cryptanalib3.svg?branch=master)
 
 `cryptanalib3` is a Python3 fork of the `cryptanalib` module from the FeatherDuster project, meant to be a standalone module for performing cryptanalysis and cryptographic exploit development.
 
