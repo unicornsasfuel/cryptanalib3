@@ -14,7 +14,6 @@ setup(name='cryptanalib3',
       packages=find_packages(exclude=['examples','tests']),
       install_requires=[
           'pycryptodome',
-          'numpy'
       ],
       python_requires='>=3.6',
       classifiers=[

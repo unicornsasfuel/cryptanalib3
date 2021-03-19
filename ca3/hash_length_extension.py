@@ -89,7 +89,6 @@ def md4_extend(msg, length, append, hsh):
     This calculates a glue padding with the MD4 scheme.
     Other kinds of padding could be implemented here in the future.
     """
-    import pdb; pdb.set_trace()
     a = int(hsh[0:8], 16)
     b = int(hsh[8:16], 16)
     c = int(hsh[16:24], 16)

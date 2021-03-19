@@ -13,7 +13,6 @@ import decimal
 from binascii import unhexlify
 from base64 import b64decode
 
-import numpy as np
 from Crypto.Util import number as Cnumber
 
 # This is ugly as sin, but it cleans up the namespace
@@ -1539,17 +1538,16 @@ def gaussian_lattice_reduction(v1, v2):
     `` tuple(int, int)`` v1 - first reduced vector
     `` tuple(int, int)`` v1 - second reduced vector
     '''
-    v1 = np.asarray(v1)
-    v2 = np.asarray(v2)
 
     while(True):
-        if( np.linalg.norm(v2.astype(float)) < np.linalg.norm(v1.astype(float))):
+        # norm v2 < norm v1
+        if( pow(pow(v2[0], 2) + pow(v2[1], 2), 1/2) < pow(pow(v1[0], 2) + pow(v1[1], 2), 1/2)):
             aux = v2
             v2 = v1
             v1 = aux
-        m = round(np.dot(v1,v2)/np.dot(v1,v1))
+        m = round((v1[0] * v2[0] + v1[1] * v2[1])/(v1[0] * v1[0] + v1[1] * v1[1]))
         if m == 0:
             return v1, v2
-        v2 = v2 - np.dot(m,v1)
+        v2 = [v2[0] - m*v1[0], v2[1] - m*v1[1]]
 
 
