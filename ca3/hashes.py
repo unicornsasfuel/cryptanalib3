@@ -1,11 +1,15 @@
 #!/usr/bin/env python
-# Hash algorithms in python3 by Ben Wiederhake at https://gist.github.com/BenWiederhake
+
+# Copyright 2013 bonsaiviking
+# Copyright 2018 Ben Wiederhake
+# Implied automatic Github license
 
 import struct
 
 # -------------------
 #     SHA1
 # -------------------
+
 '''
 def leftrotate(i, n):
     return ((i << n) & 0xffffffff) | (i >> (32 - n))
