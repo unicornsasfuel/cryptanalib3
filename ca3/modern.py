@@ -2,7 +2,7 @@
 Cryptanalib - A series of useful functions for cryptanalysis
 by Daniel "unicornFurnace" Crowley
 
-dependencies - PyCryptodome
+dependencies - PyCryptodome, numpy
 """
 import operator
 import itertools
@@ -267,7 +267,7 @@ def recover_rsa_modulus_from_signatures(m1, s1, m2, s2, e=0x10001):
 
    Since the most common public exponent is 65537, we default
    to that.
-   
+
    Parameters:
    ``bytes`` m1 - The first message
    ``bytes`` s1 -  The signature of the first message
@@ -301,13 +301,13 @@ def small_message_rsa_attack(ciphertext, modulus, exponent, minutes=5, verbose=F
    to the size of the modulus may result in a situation where the message,
    after exponentiation, does not exceed the bounds of the modulus, reducing
    decryption to:
-   
+
    plaintext = ciphertext ** (1/exponent)
 
    Alternatively, there may be some small value for x such that:
 
    plaintext = (ciphertext + x*modulus) ** (1/exponent)
-   
+
    Inputs:
    ``int`` ciphertext - The RSA encrypted message
    ``int`` modulus - The N, or modulus, of the public key
@@ -497,7 +497,7 @@ def fermat_factor(N, minutes=10, verbose=False):
 def bb98_padding_oracle(ciphertext, padding_oracle, exponent, modulus, verbose=False, debug=False):
    """
    Bleichenbacher's RSA-PKCS1-v1_5 padding oracle from CRYPTO '98
-   
+
    Given an RSA-PKCS1-v1.5 padding oracle and a ciphertext,
    decrypt the ciphertext.
 
@@ -918,7 +918,7 @@ def ecb_cpa_decrypt(encryption_oracle, block_size, verbose=False, hollywood=True
    In the case that you have access to a system that will encrypt data of your choice, with secret data appended to it,
    with any block cipher in ECB mode, and return the encrypted data to you, it is possible to recover the secret
    data with a series of queries.
-   
+
    Parameters:
    ``function`` encryption_oracle - A function that will encrypt arbitrary data in ECB mode with
       a fixed secret suffix to be decrypted. It must accept a single ``bytes`` input, and return the raw
@@ -1044,7 +1044,7 @@ def padding_oracle_decrypt(padding_oracle, ciphertext, block_size, padding_type=
    Given a padding oracle function that accepts raw ciphertext and returns
    True for good padding or False for bad padding, and a ciphertext to decrypt:
    Perform Vaudenay's PO -> DO attack
-   
+
    Parameters:
    ``function`` padding_oracle - A function that takes a ciphertext as its only parameter
       and returns ``True`` for good padding or ``False`` for bad padding
@@ -1155,13 +1155,13 @@ def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=Fal
    '''
    Duong & Rizzo's CBC-R technique for turning a CBC mode block
    cipher decryption oracle into an encryption oracle
-   
+
    Parameters:
    ``bytes`` new_plaintext - Plaintext to encrypt using the CBCR technique
    ``function`` oracle - A function that calls out to either a CBC decryption oracle
       or CBC padding oracle. It should take a single ``bytes`` parameter as the ciphertext
       and return either ``True`` for good padding and ``False`` for bad padding if it
-      is a padding oracle, or return the decrypted data as ``bytes`` if it is a full 
+      is a padding oracle, or return the decrypted data as ``bytes`` if it is a full
       decryption oracle.
    ``int`` block_size - block size of cipher in use
    ``bool`` is_padding_oracle - Indicates whether the oracle function provided is a
@@ -1297,7 +1297,7 @@ def break_many_time_pad(ciphertexts, pt_freq_table=frequency.frequency_tables['s
    Takes a list of ciphertexts XOR'ed with the same unknown set of bytes
    and breaks them by applying single byte xor analysis technique to
    corresponding bytes in each ciphertext.
-   
+
    Useful for:
    OTP with fixed key
    Stream ciphers with fixed key/IV
@@ -1382,7 +1382,7 @@ def detect_hash_format(words, hashes):
    '''
    Take a list of bytestrings, permute and hash them to determine
    some hash like md5("username:password:userid")
-   
+
    Matches against list of hashes provided in raw or hex form as "hashes" param
 
    Parameters:
@@ -1521,3 +1521,33 @@ def retrieve_iv(decryption_oracle, ciphertext, blocksize):
    test_payload = (b"\x00" * (blocksize * 2)) + ciphertext
    test_result = decryption_oracle(test_payload)
    return helpers.sxor(test_result[:blocksize], test_result[blocksize:blocksize * 2])
+
+
+def gaussian_lattice_reduction(v1, v2):
+    '''
+    given two vectors v1 and v1 reduce their basis
+    using gaussian reduction. Useful in breaking some
+    toy crypto.
+    https://en.wikipedia.org/wiki/Lattice_reduction
+
+    Parameters:
+    ``tuple (int, int)`` v1 - vector to be reduced
+    ``tuple (int, int)`` v2 - vector to be reduced
+
+    Returns:
+    `` tuple(int, int)`` v1 - first reduced vector
+    `` tuple(int, int)`` v1 - second reduced vector
+    '''
+
+    while(True):
+        # norm v2 < norm v1
+        if( pow(pow(v2[0], 2) + pow(v2[1], 2), 1/2) < pow(pow(v1[0], 2) + pow(v1[1], 2), 1/2)):
+            aux = v2
+            v2 = v1
+            v1 = aux
+        m = round((v1[0] * v2[0] + v1[1] * v2[1])/(v1[0] * v1[0] + v1[1] * v1[1]))
+        if m == 0:
+            return v1, v2
+        v2 = [v2[0] - m*v1[0], v2[1] - m*v1[1]]
+
+
