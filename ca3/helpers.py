@@ -956,3 +956,72 @@ def derive_d_from_pqe(p,q,e):
    '''
    return int(number.inverse(e,(p-1)*(q-1)))
 
+def prime_factors(n):
+    '''
+    Simple algorithm to factorize n.
+    Inputs:
+    ``int`` n - The number
+
+    Outputs:
+    ``list`` Lists all the tuples of factors and exponents [(factor1, exponent1),..].
+    '''
+    r = []
+    while n % 2 == 0:
+        n //= 2
+        r.append(2)
+    for i in range(3, n // 2, 2):
+        if n <= 1:
+            break
+        while n % i == 0:
+            n //= i
+            r.append(i)
+    return [(x, r.count(x)) for x in set(r)]
+
+def pollard_factor(n):
+    '''
+    if n is a product of primes p*q, and p-1 is a product of small primes, finds a factor of p-1 and returns.
+    Inputs:
+    ``int`` n - The number n = p*q
+
+    Outputs:
+    ``int`` one factor of p-1.
+    '''
+    a = 2
+    factorial = 2
+    for i in range(1, n):
+        factorial *= i+1
+        r, s, d = extended_gcd(pow(a, factorial, n) - 1, n)
+        if d != 1:
+            return d
+
+def discrete_log(g, h, p):
+    '''
+    Straightforward way to bruteforce the discrete log.
+    Here to fill a hole to be improved upon later.
+    ``int`` p - The size of the prime field
+    ``int`` h - The congruence meant to be found
+    ``int`` g - The number to be exponentiated
+
+    Outputs:
+    ``int`` The discrete log
+    '''
+    for i in range(1, p):
+        n = pow(g, i, p)
+        if n == h:
+            return i
+
+def find_order(g, p):
+    '''
+     Find the order of element g in prime field p.
+     The order of an element g is N when g^N mod p == 1.
+     Not the most optimal way to do this, but the discrete log algos
+     assume you have the order of the element beforehand so here we are.
+    Inputs:
+    ``int`` p - The size of the prime field
+    ``int`` g - The number to find the order of
+
+    Outputs:
+    ``int`` The order
+    '''
+    return discrete_log(g, 1, p)
+
