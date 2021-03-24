@@ -1551,3 +1551,104 @@ def gaussian_lattice_reduction(v1, v2):
         v2 = [v2[0] - m*v1[0], v2[1] - m*v1[1]]
 
 
+def pohlig_hellman(g, h, p, N=0):
+    '''
+     Algorithm described in section 2.9 of the book 
+     An Introduction to Mathematical Cryptography (Hoffstein Pipher, Silverman) 
+     to solve discrete log problems: g^x = h mod p by reducing the problem.
+    Inputs:
+    ``int`` g - The base g
+    ``int`` h - The remainder h
+    ``int`` p - The prime modulus p
+    ``int`` N - The order of g in p, if known
+
+    Outputs:
+    ``int`` The discrete log solution
+    '''
+    
+    if N == 0:
+        N = helpers.find_order(g, p)
+
+    e_pow = helpers.prime_factors(N)
+    crt = []
+    for q in e_pow:
+        chinese_prime_factor = (p-1) // q[0]
+        # reducing a problem of prime power order to prime order
+        # (g^q^{e-1})^x == (h*g^x_i)^q^{e-i-1}
+        if(q[1] > 1):
+            chinese_prime_factor = 0
+            x_i = 0
+            h_i = h
+            for i in range(0, q[1]):
+                x_i = helpers.discrete_log(pow(g, pow(q[0], q[1]-1, p), p), pow(h_i, pow(q[0], q[1]-i-1, p), p), p)
+                h_i = (h_i * Cnumber.inverse(pow(g, x_i*pow(q[0],i), p), p))% p
+                chinese_prime_factor += x_i * (q[0]**i)
+        crt.append((chinese_prime_factor, q[0]**q[1]))
+    sol = helpers.chinese_remainder_theorem(crt)
+    return sol[0]
+
+
+def make_f(g, h, p):
+    '''
+    pollard_walk is the original suggested funcion for the pollard rho method below. 
+    There are better alternatives by Edlyn Teske and Richard Brent that could be
+    implemented in the future.
+    Inputs:
+    ``int`` g - The base g
+    ``int`` h - The remainder h
+    ``int`` p - The prime modulus
+
+    Outputs:
+    ``function`` A function for computing iterations of x, alpha, beta to find the rho cycle.
+    '''
+
+    def pollard_walk(triple):
+        x, a, b = triple
+        if(0 <= x and x < p//3):
+            return (g * x) % p, a+1 % (p-1), b
+        elif(p//3 <= x and x < 2*p//3):
+            return (x * x) % p, 2*a % (p-1), 2*b % (p-1)
+        else:
+            return (h * x) % p, a, b+1 % (p-1)
+    return pollard_walk
+
+
+def pollard_rho(g, h, p, minutes=30):
+    '''
+     Algorithm described in section 5.5 of the book 
+     An Introduction to Mathematical Cryptography (Hoffstein, Pipher, Silverman) 
+     to solve discrete log problems: g^x = h mod p by using cycle-finding.
+    Inputs:
+    ``int`` g - The base g
+    ``int`` h - The remainder h
+    ``int`` p - The prime modulus
+
+    Outputs:
+    ``int`` The discrete log solution
+    '''
+    from time import time
+    current_time = int(time())
+    end_time = current_time + int(minutes * 60)
+
+    f = make_f(g, h, p)
+    tortoise, alpha, beta = f((1, 0, 0))
+    hare, gamma, delta = f(f((1, 0, 0)))
+    while(1):
+        if(time() > end_time):
+            print("Time expired, returning 1.")
+            return 1
+        if(tortoise == hare and pow(g, (alpha-gamma) % (p-1), p) == pow(h, (delta-beta) % (p-1), p)):
+            u = (alpha - gamma) % (p-1)
+            v = (delta - beta) % (p-1)
+            s, _, d = helpers.extended_gcd(v, p-1)
+            w = ((s * u) % (p-1)) // d
+            initial_w = w
+            while(pow(g,w,p) != h):
+                w += ((p-1)//d) % (p-1)
+                if(w == initial_w):
+                    print("something's wrong here. Exiting...")
+                    return 1
+            return w
+        tortoise, alpha, beta = f((tortoise, alpha, beta))
+        hare, gamma, delta = f(f((hare, gamma, delta)))
+
