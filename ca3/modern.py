@@ -1173,8 +1173,8 @@ def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=Fal
    '''
    new_plaintext = helpers.pkcs7_pad(new_plaintext, block_size)
 
-   def __padding_decryption_oracle(ciphertext):
-      return padding_oracle_decrypt(oracle, ciphertext, block_size, iv=b"\x00" * block_size)
+   def __padding_decryption_oracle(ciphertext, prefix=b''):
+      return padding_oracle_decrypt(oracle, ciphertext, block_size, prefix=prefix, iv=b"\x00" * block_size)
 
    if is_padding_oracle:
       decrypt = __padding_decryption_oracle
@@ -1200,7 +1200,10 @@ def cbcr(new_plaintext, oracle, block_size, is_padding_oracle=False, verbose=Fal
       if verbose:
          count += 1
          sys.stdout.write('\rEncrypting block %d of %d' % (count, num_blocks))
-      intermediate_block = decrypt(null_block + utility_block + padding_block)[block_size:block_size * 2]
+      if is_padding_oracle:
+         intermediate_block = decrypt(utility_block)
+      else:
+         intermediate_block = decrypt(null_block + utility_block + padding_block)[block_size:block_size * 2]
       utility_block = helpers.sxor(intermediate_block, plaintext_block)
       new_ciphertext = utility_block + new_ciphertext
    return new_ciphertext
